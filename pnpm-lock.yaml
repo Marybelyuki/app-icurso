@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@anthropic-ai/sdk':
         specifier: ^0.85.0
-        version: 0.85.0(zod@4.3.6)
+        version: 0.85.0(zod@3.25.76)
       '@supabase/ssr':
         specifier: ^0.10.0
         version: 0.10.0(@supabase/supabase-js@2.102.1)
@@ -38,9 +38,12 @@ importers:
       next:
         specifier: 16.2.2
         version: 16.2.2(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      next-themes:
+        specifier: ^0.4.6
+        version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       openai:
         specifier: ^6.33.0
-        version: 6.33.0(ws@8.20.0)(zod@4.3.6)
+        version: 6.33.0(ws@8.20.0)(zod@3.25.76)
       pdf-parse:
         specifier: ^2.4.5
         version: 2.4.5
@@ -59,6 +62,9 @@ importers:
       shadcn:
         specifier: ^4.2.0
         version: 4.2.0(@types/node@20.19.39)(typescript@5.9.3)
+      sonner:
+        specifier: ^2.0.7
+        version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       tailwind-merge:
         specifier: ^3.5.0
         version: 3.5.0
@@ -3559,6 +3565,12 @@ packages:
     resolution: {integrity: sha512-z9sZrk6wyf8/NDKKqe+Tyl58XtgkYrV4kgt1O8xrzYvpl1LvPacPo0imMLHfpStk3kgCIq1ksJ2bmJn9hue2lQ==}
     engines: {node: '>= 0.4.0'}
 
+  next-themes@0.4.6:
+    resolution: {integrity: sha512-pZvgD5L0IEvX5/9GWyHMf3m8BKiVQwsCMHfoFosXtXBMnaS0ZnIJ9ST4b4NqLVKDEm8QBxoNNGNaBv2JNF6XNA==}
+    peerDependencies:
+      react: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
+      react-dom: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
+
   next@16.2.2:
     resolution: {integrity: sha512-i6AJdyVa4oQjyvX/6GeER8dpY/xlIV+4NMv/svykcLtURJSy/WzDnnUk/TM4d0uewFHK7xSQz4TbIwPgjky+3A==}
     engines: {node: '>=20.9.0'}
@@ -4109,6 +4121,12 @@ packages:
     resolution: {integrity: sha512-HLpt+uLy/pxB+bum/9DzAgiKS8CX1EvbWxI4zlmgGCExImLdiad2iCwXT5Z4c9c3Eq8rP2318mPW2c+QbtjK8A==}
     engines: {node: '>= 10.0.0', npm: '>= 3.0.0'}
 
+  sonner@2.0.7:
+    resolution: {integrity: sha512-W6ZN4p58k8aDKA4XPcx2hpIQXBRAgyiWVkYhT7CvK6D3iAu7xjvVyhQHg2/iaKJZ1XVJ4r7XuwGL+WGEK37i9w==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+      react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
@@ -4583,11 +4601,11 @@ snapshots:
       package-manager-detector: 1.6.0
       tinyexec: 1.1.1
 
-  '@anthropic-ai/sdk@0.85.0(zod@4.3.6)':
+  '@anthropic-ai/sdk@0.85.0(zod@3.25.76)':
     dependencies:
       json-schema-to-ts: 3.1.1
     optionalDependencies:
-      zod: 4.3.6
+      zod: 3.25.76
 
   '@babel/code-frame@7.29.0':
     dependencies:
@@ -8262,6 +8280,11 @@ snapshots:
 
   netmask@2.1.0: {}
 
+  next-themes@0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+
   next@16.2.2(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       '@next/env': 16.2.2
@@ -8381,10 +8404,10 @@ snapshots:
       powershell-utils: 0.1.0
       wsl-utils: 0.3.1
 
-  openai@6.33.0(ws@8.20.0)(zod@4.3.6):
+  openai@6.33.0(ws@8.20.0)(zod@3.25.76):
     optionalDependencies:
       ws: 8.20.0
-      zod: 4.3.6
+      zod: 3.25.76
 
   optionator@0.9.4:
     dependencies:
@@ -9029,6 +9052,11 @@ snapshots:
     dependencies:
       ip-address: 10.1.0
       smart-buffer: 4.2.0
+
+  sonner@2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
 
   source-map-js@1.2.1: {}
 

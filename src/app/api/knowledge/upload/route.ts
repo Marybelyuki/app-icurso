@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import OpenAI from 'openai'
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
+import { getOpenAIClient } from '@/lib/ai/openai-client'
 
 async function generateEmbedding(text: string): Promise<number[]> {
+  const openai = getOpenAIClient()
   const response = await openai.embeddings.create({
     model: 'text-embedding-3-small',
     input: text.slice(0, 8000),

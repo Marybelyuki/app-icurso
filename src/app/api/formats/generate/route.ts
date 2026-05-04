@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import OpenAI from 'openai'
+import { getOpenAIClient } from '@/lib/ai/openai-client'
 import { getCourseById, getModules, upsertCourseFormat } from '@/lib/db/queries'
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -11,6 +9,16 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  let openai
+  try {
+    openai = getOpenAIClient()
+  } catch {
+    return NextResponse.json(
+      { error: 'Servicio de IA no configurado. Añade OPENAI_API_KEY en el entorno (p. ej. Vercel → Settings → Environment Variables).' },
+      { status: 503 }
+    )
   }
 
   const { courseId } = await request.json()

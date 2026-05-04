@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import OpenAI from 'openai'
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
+import { getOpenAIClient } from '@/lib/ai/openai-client'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -10,6 +8,16 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  let openai
+  try {
+    openai = getOpenAIClient()
+  } catch {
+    return NextResponse.json(
+      { error: 'OPENAI_API_KEY no configurada; no se pueden generar embeddings de búsqueda.' },
+      { status: 503 }
+    )
   }
 
   const { query, courseId, limit = 3 } = await request.json()

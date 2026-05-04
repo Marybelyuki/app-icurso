@@ -2,15 +2,20 @@ import Anthropic from '@anthropic-ai/sdk'
 import { SYSTEM_PROMPT } from './prompts/system'
 import type { GenerateRequest } from '@/types/content'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-})
+function getAnthropicClient(): Anthropic {
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim()
+  if (!apiKey) {
+    throw new Error('ANTHROPIC_API_KEY no está configurada')
+  }
+  return new Anthropic({ apiKey })
+}
 
 export async function generateModuleContent(
   params: GenerateRequest,
   onChunk: (chunk: string) => void,
   onDone: (fullText: string) => void
 ): Promise<void> {
+  const anthropic = getAnthropicClient()
   const { courseName, moduleTitle, objectives, knowledgeContext } = params
 
   const userPrompt = `

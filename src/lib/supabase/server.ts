@@ -12,7 +12,8 @@ export async function createServiceClient() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
   if (!url || !key) {
     throw new Error(
-      'Configura NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en icursa/.env.local'
+      'Configura NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY. ' +
+        'En local: icursa/.env.local. En Vercel: Project → Settings → Environment Variables.'
     )
   }
   assertProjectApiUrl(url)

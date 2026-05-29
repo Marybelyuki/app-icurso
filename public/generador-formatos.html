@@ -1599,7 +1599,28 @@ function getCurrentCourseNormReference(){
 function normalizeCourseNormText(text){
   const value = String(text || '');
   const normRef = getCurrentCourseNormReference();
-  if (!normRef) return normalizeNom029Text(value);
+  const cleanRedundancies = (raw) => {
+    let out = String(raw || '').replace(/\s+/g, ' ').trim();
+    out = out.replace(/\b([a-zA-ZáéíóúÁÉÍÓÚñÑ]+)\b(\s+\1\b)+/gi, '$1');
+    const reps = [
+      [/\badoptar\s+adopci[oó]n\s+de\b/gi, 'adoptar '],
+      [/\badoptar\s+adopci[oó]n\b/gi, 'adoptar'],
+      [/\breconocer\s+reconocimiento\s+de\b/gi, 'reconocer '],
+      [/\breconocer\s+reconocimiento\b/gi, 'reconocer'],
+      [/\bapreciar\s+reconocimiento\s+de\s+la\s+importancia\s+de\b/gi, 'apreciar la importancia de'],
+      [/\bapreciar\s+reconocimiento\s+de\b/gi, 'apreciar '],
+      [/\bimportancia\s+de\s+la\s+importancia\s+de\b/gi, 'importancia de']
+    ];
+    for (let i = 0; i < 3; i++) {
+      const prev = out;
+      reps.forEach(([p, r]) => { out = out.replace(p, r); });
+      out = out.replace(/\s{2,}/g, ' ').trim();
+      if (out === prev) break;
+    }
+    return out;
+  };
+
+  if (!normRef) return cleanRedundancies(normalizeNom029Text(value));
   // Reemplaza cualquier variante NOM detectada (con o sin año), por la norma del curso actual.
   let normalized = value
     .replace(/NOM-\d{3}-[A-Z]+(?:-\d{4})?/gi, normRef)
@@ -1611,7 +1632,7 @@ function normalizeCourseNormText(text){
   const escapedNorm = normRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const duplicatedNormPattern = new RegExp(`(${escapedNorm})\\s*(?:,\\s*|y\\s+|e\\s+)\\1`, 'gi');
   normalized = normalized.replace(duplicatedNormPattern, '$1');
-  return normalized;
+  return cleanRedundancies(normalized);
 }
 
 function enforceNormConsistencyInCarta(){
@@ -1648,6 +1669,10 @@ function enforceNormConsistencyInManualParticipante(){
 
 /** Temario manual participante: formato impreso 1. / ● / o (como guía SDI), alimentado por carta y evaluaciones. */
 function buildTemarioParticipantListaHtml(data){
+  const isCoffeeBreakText = (txt) => /\breceso\b|\bservicio\s+de\s+caf[eé]\b|\bcaf[eé]\b/i.test(String(txt || '').toLowerCase());
+  const participantModules = Array.isArray(data.modulos)
+    ? data.modulos.filter((m) => !isCoffeeBreakText(m && m.titulo))
+    : [];
   const esc = (s) => normalizeCourseNormText(String(s == null ? '' : s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const bulletLine = (text) =>
     `<div class="mp-tem-item"><span class="mp-tem-disc">●</span><span class="mp-tem-line">${esc(String(text || '').replace(/\s+/g, ' ').trim())}</span></div>`;
@@ -1715,14 +1740,15 @@ function buildTemarioParticipantListaHtml(data){
         });
       html += '</div>';
     });
-  } else if (Array.isArray(data.modulos) && data.modulos.length) {
-    data.modulos.forEach((m, mi) => {
+  } else if (participantModules.length) {
+    participantModules.forEach((m, mi) => {
       bloqueCount++;
       const tit = String(m.titulo || `Tema ${mi + 1}`).replace(/^\s*\d+\.[\s\u00a0]*/, '');
       html += `<div class="mp-tem-bloque"><p class="mp-tem-num">${bloqueCount}. ${esc(tit)}</p>`;
       const sec = m.secuencia_didactica;
       if (Array.isArray(sec) && sec.length) {
         sec.forEach((b) => {
+          if (isCoffeeBreakText(b && b.nombre_bloque)) return;
           const parsed = parseNombreBloque(b.nombre_bloque);
           if (parsed.main && parsed.subs.length) html += bulletWithSubs(parsed.main, parsed.subs);
           else if (parsed.main) html += bulletLine(parsed.main);
@@ -1766,7 +1792,7 @@ function buildTemarioParticipantListaHtml(data){
       const crits = (f0.criterios || []).slice(0, 4).map((c) => (String(c).length > 140 ? String(c).slice(0, 137) + '…' : String(c)));
       if (crits.length) html += bulletWithSubs('Ejemplos de criterios que se observan en aula:', crits);
     } else {
-      data.modulos.forEach((m) => {
+      participantModules.forEach((m) => {
         const f = findFormativa(m.titulo);
         if (!f || !f.criterios || !f.criterios.length) return;
         const short = f.criterios.slice(0, 2).map((c) => (String(c).length > 130 ? String(c).slice(0, 127) + '…' : String(c)));
@@ -1797,13 +1823,16 @@ function mpManualEsc(s){
 }
 
 function mapManualContenidoArrayToHtml(p){
-  if (!Array.isArray(p.contenido)) return '';
-  return p.contenido.map((c) => {
+  let chunks = p.contenido;
+  if (typeof chunks === 'string') chunks = [chunks];
+  if (!Array.isArray(chunks)) return '';
+  return chunks.map((c) => {
     const text = normalizeCourseNormText(c).trim();
+    if (!text) return '';
     if (text.startsWith('<')) return text;
     if (text.startsWith('-') || text.startsWith('•')) return `<ul class="mp-ul-bullets"><li>${text.replace(/^[•\-\s]+/, '')}</li></ul>`;
     return `<p class="mp-para">${mpManualEsc(text)}</p>`;
-  }).join('');
+  }).filter(Boolean).join('');
 }
 
 function mpCursoNombreCorto(){
@@ -1968,14 +1997,16 @@ function buildMpConceptosClave(data){
 }
 
 function buildMpComponentesDelTema(data){
-  const mods = Array.isArray(data.modulos) ? data.modulos : [];
+  const isBreakBlock = (txt) => /\breceso\b|\bservicio\s+de\s+cafe\b|\bcaf[eé]\b/i.test(String(txt || '').toLowerCase());
+  const mods = Array.isArray(data.modulos) ? data.modulos.filter((m) => !isBreakBlock(m && m.titulo)) : [];
   if (!mods.length) return `<p class="mp-para">Los componentes del temario se detallan en la carta descriptiva y en el desarrollo por temas.</p>`;
   let h = '';
   mods.forEach((m, i) => {
     h += `<p class="mp-comp-tema-head">Tema ${i + 1}: ${mpManualEsc(String(m.titulo || '').trim())}</p><ul class="mp-ul-check">`;
     (m.secuencia_didactica || []).forEach((b) => {
       const nb = String(b.nombre_bloque || '').trim();
-      if (nb) h += `<li>${mpManualEsc(nb)}${b.duracion_minutos ? ` <em>(${b.duracion_minutos} min)</em>` : ''}</li>`;
+      if (!nb || isBreakBlock(nb)) return;
+      h += `<li>${mpManualEsc(nb)}</li>`;
     });
     h += `</ul>`;
   });
@@ -2057,34 +2088,234 @@ function buildMpConclusion(data){
   return h;
 }
 
+function participantManualPlainTextLen(html){
+  return String(html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().length;
+}
+
+function normMpSectionTitle(s){
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Cuando la IA devuelve secciones con título de tema pero contenido vacío: emparejar con modulos[].titulo y pintar la secuencia didáctica. */
+function findModuloForParticipantManualSection(data, rawTitle, normalizedKey){
+  const mods = Array.isArray(data.modulos) ? data.modulos : [];
+  if (!mods.length) return null;
+  const b = normMpSectionTitle(rawTitle || normalizedKey);
+  if (!b) return null;
+  const stop = new Set(['de','del','la','el','los','las','y','en','para','con','por','al','a','un','una','tema','temario','curso']);
+  const tokens = (s) => s.split(/\s+/).map((w) => w.trim()).filter((w) => w.length > 2 && !stop.has(w));
+  const bt = tokens(b);
+  if (!bt.length) return null;
+  let best = null;
+  let score = -1;
+  mods.forEach((m) => {
+    const a = normMpSectionTitle(m && m.titulo);
+    if (!a) return;
+    let sc = 0;
+    const at = tokens(a);
+    if (!at.length) return;
+    if (a === b) sc = 120;
+    else if (a.includes(b) || b.includes(a)) sc = 90;
+    const setA = new Set(at);
+    const setB = new Set(bt);
+    let inter = 0;
+    setA.forEach((w) => { if (setB.has(w)) inter++; });
+    if (inter) {
+      const union = new Set([...setA, ...setB]).size;
+      const jacc = inter / Math.max(1, union);
+      sc += Math.round(jacc * 100);
+      const coverageB = inter / bt.length;
+      sc += Math.round(coverageB * 60);
+      if (coverageB >= 0.75) sc += 20;
+    }
+    if (sc > score) {
+      score = sc;
+      best = m;
+    }
+  });
+  return score >= 70 ? best : null;
+}
+
+function buildMpSingleModuloParticipantHtml(mod){
+  const titulo = mpManualEsc(String(mod && mod.titulo ? mod.titulo : '').trim());
+  let h = `<p class="mp-para">Esta parte del manual corresponde al desarrollo programado para <strong>${titulo || 'este tema'}</strong>, alineado a la carta descriptiva y a la secuencia didáctica del curso.</p>`;
+  const seq = Array.isArray(mod && mod.secuencia_didactica) ? mod.secuencia_didactica : [];
+  if (!seq.length) {
+    h += `<p class="mp-para">Consulta en sesión la explicación detallada de actividades, criterios de desempeño y aplicaciones prácticas de este tema.</p>`;
+    return h;
+  }
+  const cleanActivityLine = (raw) => {
+    let t = String(raw || '').trim();
+    if (!t) return '';
+    t = t.replace(/^[a-z]\)\s*/i, '').replace(/^\d+\.[\s\u00a0]*/, '');
+    t = t.replace(/^\[[\s\u00a0]*/, '').replace(/[\s\u00a0]*\]$/,'').trim();
+    t = t.replace(/\s+/g, ' ').replace(/[.:;,\-–—\s]+$/g, '').trim();
+    if (!t) return '';
+    if (/^(aplicar tecnica|presentar objetivo|recuperar experiencia previa|desarrollar contenido|resolver dudas|sintesis\/preguntas dirigidas)$/i.test(t)) return '';
+    return t;
+  };
+  seq.forEach((b, idx) => {
+    const nb = String(b.nombre_bloque || '').trim();
+    const act = String(b.actividades || '').trim();
+    h += `<div class="mp-bloque-participante" style="margin-bottom:14px">`;
+    if (nb) {
+      h += `<p class="mp-subheading">${idx + 1}. ${mpManualEsc(nb)}</p>`;
+      h += `<p class="mp-para">En este bloque se trabaja de forma guiada la comprensión y aplicación de <strong>${mpManualEsc(nb.toLowerCase())}</strong>, vinculándolo con situaciones reales del entorno laboral.</p>`;
+    }
+    if (act) {
+      const lines = act.split(/\n/).map((l) => l.trim()).filter(Boolean);
+      if (lines.length > 2) {
+        const seen = new Set();
+        const cleaned = [];
+        lines.forEach((ln) => {
+          const t = cleanActivityLine(ln);
+          if (!t) return;
+          const key = t.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          cleaned.push(t);
+        });
+        h += `<ul class="mp-ul-bullets">`;
+        cleaned.slice(0, 8).forEach((t) => { h += `<li>${mpManualEsc(t)}</li>`; });
+        h += `</ul>`;
+      } else {
+        h += `<p class="mp-para">${mpManualEsc(cleanActivityLine(act) || act)}</p>`;
+      }
+    }
+    h += `<p class="mp-para">Al cierre de este bloque, se recuperan hallazgos y se aterrizan acciones concretas para fortalecer la ejecución segura y consistente en el trabajo diario.</p>`;
+    h += `</div>`;
+  });
+  return h;
+}
+
+function buildMpCierreEvaluacionParticipantFallback(data){
+  let h = `<p class="mp-para">En esta fase el instructor sintetiza los aprendizajes del curso, resuelve dudas finales y orienta la aplicación de lo aprendido en tu entorno laboral.</p>`;
+  const sum = Array.isArray(data.evaluacion_sumativa) ? data.evaluacion_sumativa : [];
+  if (sum.length) {
+    h += `<p class="mp-para"><strong>Evaluación sumativa (Anexo 4):</strong> aplicarás ${sum.length} reactivos de opción múltiple para verificar la integración de los contenidos del temario.</p>`;
+  }
+  const fmt = Array.isArray(data.evaluacion_formativa) ? data.evaluacion_formativa : [];
+  if (fmt.length) {
+    h += `<p class="mp-para"><strong>Evaluación formativa:</strong> durante el desarrollo se observan criterios verificables alineados al temario (Anexo 3).</p>`;
+  }
+  h += `<p class="mp-para">Conserva tus notas y evidencias según las indicaciones del instructor y la carta descriptiva.</p>`;
+  return h;
+}
+
+function wrapParticipantManualInner(innerHtml){
+  return `<div class="mp-manual-like-pdf">${innerHtml}</div>`;
+}
+
+/** Si el cuerpo queda casi vacío (contenido IA vacío o truncado), rellenar desde módulos o plantilla de cierre. */
+function enrichParticipantManualBodyIfThin(innerHtml, p, data, options){
+  const opts = options || {};
+  const minChars = Number.isFinite(opts.minChars) ? opts.minChars : 48;
+  const preferSupplement = !!opts.preferSupplement;
+  const plain = participantManualPlainTextLen(innerHtml);
+  const k = p.normalizedKey || '';
+  const raw = String(p.rawTitle || '').trim();
+  const nk = normMpSectionTitle(k);
+  const nr = normMpSectionTitle(raw);
+  const needsExpansion = plain < minChars;
+  if (!needsExpansion && !preferSupplement) return wrapParticipantManualInner(innerHtml);
+  const hayCierre =
+    /\bcierre\b/.test(nk + ' ' + nr) &&
+    (/\bevaluacion\b/.test(nk + ' ' + nr) || /\bevaluaci/.test(raw + k));
+  const mod = findModuloForParticipantManualSection(data, raw, k);
+  if (mod) {
+    const extra = buildMpSingleModuloParticipantHtml(mod);
+    if (plain >= 20) {
+      return wrapParticipantManualInner(
+        `${innerHtml}<div class="mp-template-supplement" style="margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0"><p class="mp-h4-sec">Desarrollo ampliado del tema</p>${extra}</div>`
+      );
+    }
+    return wrapParticipantManualInner(extra);
+  }
+  if (hayCierre) {
+    const extra = buildMpCierreEvaluacionParticipantFallback(data);
+    if (plain >= 20) {
+      return wrapParticipantManualInner(
+        `${innerHtml}<div class="mp-template-supplement" style="margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0"><p class="mp-h4-sec">Cierre ampliado</p>${extra}</div>`
+      );
+    }
+    return wrapParticipantManualInner(extra);
+  }
+  if (plain < 12) {
+    const label = mpManualEsc(raw || 'esta sección');
+    return wrapParticipantManualInner(
+      `<p class="mp-para">No hay texto guardado para «${label}». Suele deberse a una generación anterior incompleta: vuelve a <strong>generar formatos con IA</strong> para recuperar el manual completo. Mientras tanto, el temario y el desarrollo por bloques están en la carta descriptiva y en «Componentes del temario».</p>`
+    );
+  }
+  return wrapParticipantManualInner(innerHtml);
+}
+
 function buildParticipantManualSectionBody(p, data){
   const k = p.normalizedKey || '';
   const ia = mapManualContenidoArrayToHtml(p);
   const iaLen = ia.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().length;
   let core = '';
+  let coreFromTemplate = false;
   if (k.includes('temario del curso')) {
     const op = data.objetivos_particulares || {};
     const hasS = !!(op.cognitivo && op.psicomotor && op.afectivo);
     const hasM = Array.isArray(data.modulos) && data.modulos.length;
     core = (hasS || hasM) ? buildTemarioParticipantListaHtml(data) : ia;
-  } else if (k.includes('introduccion')) core = buildMpIntroduccion(data);
-  else if (k.includes('objetivos del curso')) core = buildMpObjetivosDelCurso(data);
+    coreFromTemplate = !!(hasS || hasM);
+    if (!core.trim()) core = ia;
+    // Temario: lista estructurada + texto IA si existe (antes solo aparecía IA con umbral alto)
+    let innerTemario = core;
+    if (iaLen > 60 && core !== ia && (hasS || hasM)) {
+      innerTemario = `${core}<div class="mp-ia-primary mp-temario-ia" style="margin-top:12px">${ia}</div>`;
+    }
+    return enrichParticipantManualBodyIfThin(innerTemario, p, data, { minChars: 700, preferSupplement: true });
+  }
+  if (k.includes('introduccion')) { core = buildMpIntroduccion(data); coreFromTemplate = true; }
+  else if (k.includes('objetivos del curso')) { core = buildMpObjetivosDelCurso(data); coreFromTemplate = true; }
   else if (k.includes('objetivo general del seminario')) core = '';
-  else if (k.includes('que aprenderas')) core = buildMpQueAprenderas(data);
-  else if (k.includes('metodologia')) core = buildMpMetodologia(data);
-  else if (k.includes('importancia de conocer')) core = buildMpImportancia(data);
-  else if (k.includes('beneficios de conocer')) core = buildMpBeneficios(data);
-  else if (k.includes('conceptos clave')) core = buildMpConceptosClave(data);
-  else if (k.includes('componentes')) core = buildMpComponentesDelTema(data);
-  else if (k.includes('ejercicio')) core = buildMpEjercicioPractico(data);
-  else if (k.includes('aplicacion') || k.includes('vida laboral')) core = buildMpAplicacionVidaLaboral(data);
-  else if (k.includes('conclusion')) core = buildMpConclusion(data);
+  else if (k.includes('que aprenderas')) { core = buildMpQueAprenderas(data); coreFromTemplate = true; }
+  else if (k.includes('metodologia')) { core = buildMpMetodologia(data); coreFromTemplate = true; }
+  else if (k.includes('importancia de conocer')) { core = buildMpImportancia(data); coreFromTemplate = true; }
+  else if (k.includes('beneficios de conocer')) { core = buildMpBeneficios(data); coreFromTemplate = true; }
+  else if (k.includes('conceptos clave')) { core = buildMpConceptosClave(data); coreFromTemplate = true; }
+  else if (k.includes('componentes')) { core = buildMpComponentesDelTema(data); coreFromTemplate = true; }
+  else if (k.includes('ejercicio')) { core = buildMpEjercicioPractico(data); coreFromTemplate = true; }
+  else if (k.includes('aplicacion') || k.includes('vida laboral')) { core = buildMpAplicacionVidaLaboral(data); coreFromTemplate = true; }
+  else if (k.includes('conclusion')) { core = buildMpConclusion(data); coreFromTemplate = true; }
   else core = ia;
   if (!core.trim()) core = ia;
-  if (iaLen > 350 && !k.includes('temario del curso')) {
-    return `<div class="mp-manual-like-pdf">${core}</div><div class="mp-manual-ia-extra"><p class="mp-h4-sec">Ampliación del diseño instruccional</p>${ia}</div>`;
+
+  const corePlainLen = core.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().length;
+
+  // Para secciones estructurales (introducción, metodología, etc.), la base principal
+  // debe ser el contenido robusto de plantilla y la IA se usa como complemento.
+  if (coreFromTemplate) {
+    let inner = core;
+    // En "Componentes del temario" evitamos duplicar contenido corto de IA (incluye recesos/tiempos)
+    // y mantenemos solo la versión estructurada.
+    if (iaLen > 40 && ia !== core && !k.includes('componentes')) {
+      inner += `<div class="mp-template-supplement" style="margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0"><p class="mp-h4-sec">Ampliación contextual</p><div class="mp-ia-primary">${ia}</div></div>`;
+    }
+    const minTemplateChars = k.includes('introduccion') ? 1300 : 900;
+    return enrichParticipantManualBodyIfThin(inner, p, data, { minChars: minTemplateChars, preferSupplement: true });
   }
-  return `<div class="mp-manual-like-pdf">${core}</div>`;
+
+  // Priorizar el manual redactado por IA cuando hay contenido (antes casi solo se veían plantillas si iaLen ≤ 350).
+  if (iaLen > 40) {
+    const supplement =
+      iaLen < 1500 && coreFromTemplate && corePlainLen > 80
+        ? `<div class="mp-template-supplement" style="margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0"><p class="mp-h4-sec">Resumen estructural</p>${core}</div>`
+        : '';
+    const minCharsBySection = k.includes('introduccion') ? 1000 : (coreFromTemplate ? 800 : 900);
+    return enrichParticipantManualBodyIfThin(`<div class="mp-ia-primary">${ia}</div>${supplement}`, p, data, { minChars: minCharsBySection, preferSupplement: !coreFromTemplate });
+  }
+
+  const minCharsNoIa = k.includes('introduccion') ? 900 : (coreFromTemplate ? 700 : 850);
+  return enrichParticipantManualBodyIfThin(core, p, data, { minChars: minCharsNoIa, preferSupplement: !coreFromTemplate });
 }
 
 function buildFuenteParticipanteHtml(f, idx){
@@ -5166,6 +5397,15 @@ f) Plantear preguntas para verificar comprensión:
               if (idx >= 0) {
                 usedIndexes.add(idx);
                 orderedSections.push({ ...normalizedSections[idx], displayTitle: priority.label });
+              } else {
+                // Forzar siempre la sección, incluso si la IA no la devolvió.
+                orderedSections.push({
+                  titulo: priority.label,
+                  contenido: [],
+                  rawTitle: priority.label,
+                  normalizedKey: priority.key,
+                  displayTitle: priority.label,
+                });
               }
             });
             normalizedSections.forEach((section, idx) => {

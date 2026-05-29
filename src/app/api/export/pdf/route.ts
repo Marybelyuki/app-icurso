@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { buildModuleHtml, renderPDF } from '@/lib/export/pdf'
 import type { Curso, Modulo, ContentBlock } from '@/types/curso'
 
@@ -7,12 +7,7 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const supabase = await createServiceClient()
 
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')

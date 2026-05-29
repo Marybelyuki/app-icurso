@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { getOpenAIClient } from '@/lib/ai/openai-client'
 
 async function generateEmbedding(text: string): Promise<number[]> {
@@ -30,13 +30,7 @@ async function extractText(file: File): Promise<string> {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
   const serviceSupabase = await createServiceClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
 
   const contentType = request.headers.get('content-type') ?? ''
 

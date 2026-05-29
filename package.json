@@ -2,14 +2,23 @@
   "name": "icursa",
   "version": "0.1.0",
   "private": true,
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "puppeteer",
+      "msw",
+      "sharp",
+      "unrs-resolver"
+    ]
+  },
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/clean-dev-lock.cjs && next dev",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.85.0",
+    "@sparticuz/chromium-min": "^149.0.0",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.102.1",
     "class-variance-authority": "^0.7.1",
@@ -23,6 +32,7 @@
     "openai": "^6.33.0",
     "pdf-parse": "^2.4.5",
     "puppeteer": "^24.40.0",
+    "puppeteer-core": "^25.1.0",
     "radix-ui": "^1.4.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",

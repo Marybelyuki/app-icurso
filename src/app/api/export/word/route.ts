@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { buildModuleWord } from '@/lib/export/word'
 import type { Curso, Modulo, ContentBlock } from '@/types/curso'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const supabase = await createServiceClient()
 
   const { searchParams } = new URL(request.url)
   const moduleId = searchParams.get('moduleId')

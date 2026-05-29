@@ -75,13 +75,27 @@ export function buildModuleHtml(curso: Curso, modulo: Modulo, blocks: ContentBlo
 </html>`
 }
 
-export async function renderPDF(html: string): Promise<Buffer> {
+async function launchBrowser() {
+  if (process.env.VERCEL) {
+    const chromium = await import('@sparticuz/chromium-min')
+    const puppeteer = await import('puppeteer-core')
+    return puppeteer.default.launch({
+      args: chromium.default.args,
+      executablePath: await chromium.default.executablePath(),
+      headless: true,
+    })
+  }
+
   const puppeteer = await import('puppeteer')
-  const browser = await puppeteer.default.launch({
+  return puppeteer.default.launch({
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   })
+}
+
+export async function renderPDF(html: string): Promise<Buffer> {
+  const browser = await launchBrowser()
   const page = await browser.newPage()
-  await page.setContent(html, { waitUntil: 'networkidle0' })
+  await page.setContent(html, { waitUntil: 'load' })
   const pdf = await page.pdf({
     format: 'A4',
     margin: { top: '0', right: '0', bottom: '0', left: '0' },

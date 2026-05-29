@@ -1,22 +1,98 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { getOpenAIClient } from '@/lib/ai/openai-client'
 import { getCourseById, getModules, upsertCourseFormat } from '@/lib/db/queries'
 
-export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+function normalizeKey(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+function cleanRedundantText(input: string): string {
+  let text = input.replace(/\s+/g, ' ').trim()
+
+  // Quita repeticiones consecutivas de la misma palabra
+  text = text.replace(/\b([a-zA-ZáéíóúÁÉÍÓÚñÑ]+)\b(\s+\1\b)+/gi, '$1')
+
+  // Corrige redundancias frecuentes detectadas en temas/subtemas
+  const replacements: Array<[RegExp, string]> = [
+    [/\badoptar\s+adopci[oó]n\s+de\b/gi, 'adoptar '],
+    [/\badoptar\s+adopci[oó]n\b/gi, 'adoptar'],
+    [/\breconocer\s+reconocimiento\s+de\b/gi, 'reconocer '],
+    [/\breconocer\s+reconocimiento\b/gi, 'reconocer'],
+    [/\bapreciar\s+reconocimiento\s+de\s+la\s+importancia\s+de\b/gi, 'apreciar la importancia de'],
+    [/\bapreciar\s+reconocimiento\s+de\b/gi, 'apreciar '],
+    [/\bimportancia\s+de\s+la\s+importancia\s+de\b/gi, 'importancia de'],
+  ]
+
+  for (let i = 0; i < 3; i++) {
+    const before = text
+    for (const [pattern, replacement] of replacements) {
+      text = text.replace(pattern, replacement)
+    }
+    text = text.replace(/\s{2,}/g, ' ').trim()
+    if (text === before) break
   }
 
+  return text
+}
+
+function sanitizeGeneratedData(node: unknown): unknown {
+  if (typeof node === 'string') return cleanRedundantText(node)
+
+  if (Array.isArray(node)) {
+    if (node.every(item => typeof item === 'string')) {
+      const seen = new Set<string>()
+      const cleanedList: string[] = []
+      for (const raw of node as string[]) {
+        const cleaned = cleanRedundantText(raw)
+        const key = normalizeKey(cleaned)
+        if (!cleaned || seen.has(key)) continue
+        seen.add(key)
+        cleanedList.push(cleaned)
+      }
+      return cleanedList
+    }
+    return node.map(item => sanitizeGeneratedData(item))
+  }
+
+  if (node && typeof node === 'object') {
+    const obj = node as Record<string, unknown>
+    const out: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(obj)) {
+      out[key] = sanitizeGeneratedData(value)
+    }
+    return out
+  }
+
+  return node
+}
+
+function enforceEvaluationQuestionLimits(payload: unknown): unknown {
+  if (!payload || typeof payload !== 'object') return payload
+  const data = payload as Record<string, unknown>
+
+  const diagnostica = Array.isArray(data.evaluacion_diagnostica) ? data.evaluacion_diagnostica : []
+  const sumativa = Array.isArray(data.evaluacion_sumativa) ? data.evaluacion_sumativa : []
+
+  // Blindaje final: siempre mantener 5 y 10 aunque el modelo devuelva más.
+  data.evaluacion_diagnostica = diagnostica.slice(0, 5)
+  data.evaluacion_sumativa = sumativa.slice(0, 10)
+
+  return data
+}
+
+export async function POST(request: NextRequest) {
   let openai
   try {
     openai = getOpenAIClient()
   } catch {
     return NextResponse.json(
-      { error: 'Servicio de IA no configurado. Añade OPENAI_API_KEY en el entorno (p. ej. Vercel → Settings → Environment Variables).' },
+      { error: 'Servicio de IA no configurado. Añade OPENAI_API_KEY en icursa/.env.local.' },
       { status: 503 }
     )
   }
@@ -31,6 +107,7 @@ export async function POST(request: NextRequest) {
   let modulesPrompt = "Genera de 5 a 10 módulos coherentes y lógicos para el diplomado/curso."
   const courseContext = `${curso.name} ${curso.norm_reference ?? ''}`.toUpperCase()
   const isNom029Course = courseContext.includes('NOM-029')
+  const isNom027Course = courseContext.includes('NOM-027')
   const normSpecificPrompt = isNom029Course
     ? `
 INSTRUCCIONES ESPECIALES PARA ESTE CURSO:
@@ -65,6 +142,22 @@ INSTRUCCIONES ESPECIALES PARA ESTE CURSO:
     'Vigilancia',
     'Concordancia con normas internacionales',
   ]
+  const nom027SafetyTopics = [
+    'Identificación de riesgos en trabajos de soldadura y corte',
+    'Medidas preventivas contra incendios y explosiones',
+    'Condiciones seguras del área de trabajo',
+    'Control de materiales inflamables y combustibles',
+    'Ventilación y extracción de humos metálicos',
+    'Uso correcto del equipo de protección personal (EPP)',
+    'Seguridad eléctrica y sistemas de puesta a tierra',
+    'Inspección de máquinas, cables y conexiones',
+    'Manejo seguro de cilindros y gases comprimidos',
+    'Procedimientos para trabajos en espacios confinados',
+    'Señalización y delimitación de áreas peligrosas',
+    'Permisos para trabajos en caliente',
+    'Atención a emergencias y uso de extintores',
+    'Capacitación y responsabilidades del trabajador',
+  ]
 
   // Para NOM-029, priorizamos estructura temática alineada a la norma.
   if (isNom029Course) {
@@ -88,6 +181,29 @@ PROHIBIDO:
 - Mencionar NOM-001-SEDE-2012 en este curso.
 - Sustituir o renombrar la nomenclatura NOM-029-STPS-2011.
 `
+  } else if (isNom027Course) {
+    const nom027Coverage = nom027SafetyTopics.map(topic => `- ${topic}`).join('\n')
+    if (modulos && modulos.length > 0) {
+      modulesPrompt = `¡ATENCIÓN! El usuario ya registró módulos. Debes conservar exactamente estos títulos y el mismo número de módulos:\n${modulos.map(m => `- ${m.title}`).join('\n')}
+
+Este curso está alineado a NOM-027-STPS-2008 y es OBLIGATORIO distribuir con profundidad, sin omisiones, los siguientes temas de seguridad:\n${nom027Coverage}
+
+REGLAS OBLIGATORIAS:
+- NO repitas ideas entre bloques o módulos (evita redundancia semántica).
+- Cada subtema se debe desarrollar una sola vez con enfoque práctico y evidencia verificable.
+- Si un concepto aparece en más de un módulo, cambia el enfoque para que no duplique contenido (ej. prevención, operación, verificación, respuesta a emergencia).
+- En secuencia_didactica, usa nombre_bloque específicos (no genéricos como "Generalidades" o "Introducción" repetida).`
+    } else {
+      modulesPrompt = `Este curso está alineado a NOM-027-STPS-2008.
+Genera de 5 a 8 módulos técnicos, coherentes y sin redundancia temática.
+
+Debes cubrir obligatoriamente estos temas específicos de seguridad:\n${nom027Coverage}
+
+Reglas:
+- Cada tema debe aparecer al menos una vez en el desarrollo del curso.
+- Evita duplicidad entre temas/subtemas; no parafrasees el mismo contenido en dos módulos.
+- Los nombres de bloque de la secuencia_didactica deben ser concretos, accionables y distintos entre sí.`
+    }
   } else if (modulos && modulos.length > 0) {
     modulesPrompt = `¡ATENCIÓN! El usuario ya ha dado de alta los siguientes módulos en catálogo. DEBES generar el mismo número de módulos y usar ESTOS nombres exactos como títulos: \n${modulos.map(m => `- ${m.title}`).join('\n')}. Agrega sus actividades, duración, y desglose correspondientemente. Cada módulo debe sentirse amplio, específico y fiel al título dado por el usuario, sin resumirlo en una sola explicación corta.`
   }
@@ -109,6 +225,7 @@ La comprobación previa de recursos (30 min) va en metadatos_tiempos.comprobacio
 Los contenidos deben permitir comprobar congruencia entre carta descriptiva, sesiones y evaluación (criterio de verificabilidad en aula), alineado a la lógica de EC0301 y a la práctica de EC0217.01.
 ${normSpecificPrompt}
 ${isNom029Course ? '\nRegla crítica de nomenclatura: usa exclusivamente "NOM-029-STPS-2011" y nunca "NOM-001-SEDE-2012".\n' : ''}
+${isNom027Course ? `\nRegla crítica NOM-027: usa "NOM-027-STPS-2008" como referencia normativa principal para corte y soldadura, con foco en prevención de riesgos, incendios, atmósferas peligrosas, EPP, ventilación, permisos de trabajo en caliente y respuesta a emergencias.\n` : ''}
 
 INSTRUCCIONES ESTRUCTURALES:
 0. nombre_disenador: Nombre del diseñador instruccional responsable del diseño del curso (persona o puesto); puede coincidir con el instructor si aplica.
@@ -135,6 +252,8 @@ INSTRUCCIONES ESTRUCTURALES:
    EJEMPLO DE PATRÓN (curso ficticio; NO copies el tema ni el texto — solo la forma): Si el curso fuera de un tema técnico X, un cognitivo válido tendría accion de varias líneas (explicará y contrastará…), condicion con referencia concreta a normativa o casos; el psicomotor describiría la práctica observable; el afectivo, la valoración en contexto laboral.
 
 3. Módulos / Desarrollo (EC0217.01 — técnicas instruccionales): ${modulesPrompt}
+   - OBLIGATORIO ANTI-REDUNDANCIA: No repitas literalmente ni semánticamente el mismo tema o subtema entre módulos o bloques. Antes de finalizar, verifica que cada nombre_bloque, actividad clave y criterio formativo aporte información nueva.
+   - Si el curso corresponde a NOM-027, garantiza cobertura explícita de estos temas: ${nom027SafetyTopics.join('; ')}.
 
    REGLAS DE TIEMPO (OBLIGATORIAS):
    - Expresa la duración de CADA bloque didáctico SOLO en MINUTOS ENTEROS (entero en duracion_minutos). NUNCA uses decimales tipo 0.5 horas para media hora; usa 30 minutos.
@@ -178,9 +297,10 @@ INSTRUCCIONES ESTRUCTURALES:
    Asegúrate de que el contenido de cada sección sea MUY EXTENSO (como un manual impreso de participante: varias páginas en conjunto), literal y coherente con la carta descriptiva y el tema "${curso.name}". Cada sección (salvo el temario, que sigue el formato de lista 1./●/o) debe incluir introducción al bloque, desarrollo en varios párrafos, listados donde tenga sentido y un cierre breve. IMPORTANTE: Para "contenido", usa etiquetas HTML (<p>, <ul>, <li>, <strong>, <br>) cuando ayuden a la maquetación; también puedes usar muchas entradas de texto plano en el array si cada una es un párrafo largo. No uses listas vacías ni secciones de menos de 400 caracteres en total por sección. Reemplaza "[Tema del curso]" con el tema real del diplomado.
 7. Manual del Instructor: Para cada parte o módulo del curso, define exactamente: "titulo" (ej. "Parte 1"), "temas" (array de viñetas), "sugerencias" (array de viñetas con apoyo detallado), "tecnicas" (array de viñetas con la técnica a usar), "evaluacion" (array de viñetas con forma y tiempo), y "preguntas_refuerzo" (array de preguntas dirigidas).
 8. Evaluaciones Diagnóstica, Formativa y Sumativa (OBLIGATORIO):
-   - Diagnóstica: EXACTAMENTE 10 preguntas de opción múltiple (a, b, c, d).
-   - Sumativa: EXACTAMENTE 15 preguntas de opción múltiple (a, b, c, d).
-   - Las preguntas deben ser REALISTAS, TÉCNICAS y directamente alineadas al temario real del curso; evita reactivos genéricos o ambiguos.
+   - Diagnóstica: EXACTAMENTE 5 preguntas de opción múltiple (a, b, c, d), claras y directas.
+   - Sumativa: EXACTAMENTE 10 preguntas de opción múltiple (a, b, c, d), potentes, claras y orientadas a medir el conocimiento más importante de cada tema.
+   - Nivel de redacción para ambas: comprensible para personas con estudios de educación secundaria en adelante (lenguaje técnico básico, sin ambigüedad y sin tecnicismos innecesarios).
+   - Las preguntas deben ser REALISTAS, TÉCNICAS y directamente alineadas al temario real del curso; evita reactivos genéricos, ambiguos o con doble interpretación.
    - Cada reactivo debe evaluar un concepto, procedimiento o criterio del curso y no incluir distractores absurdos o fuera de contexto.
    - Formativa (guía de observación): por cada módulo, redacta criterios observables, verificables y conductuales (acciones concretas que el instructor pueda ver en una práctica o ejercicio), no criterios vagos como "entiende el tema".
    - En criterios formativos usa verbos observables: identifica, calcula, clasifica, aplica, documenta, argumenta, verifica, corrige, etc.
@@ -367,8 +487,8 @@ Genera una respuesta en formato JSON de forma estricta.
       },
       evaluacion_diagnostica: {
         type: "array",
-        minItems: 10,
-        maxItems: 10,
+        minItems: 5,
+        maxItems: 5,
         items: {
           type: "object",
           additionalProperties: false,
@@ -385,8 +505,8 @@ Genera una respuesta en formato JSON de forma estricta.
       },
       evaluacion_sumativa: {
         type: "array",
-        minItems: 15,
-        maxItems: 15,
+        minItems: 10,
+        maxItems: 10,
         items: {
           type: "object",
           additionalProperties: false,
@@ -427,6 +547,8 @@ Genera una respuesta en formato JSON de forma estricta.
       model: 'gpt-4o',
       messages: [{ role: 'system', content: prompt }],
       temperature: 0.7,
+      // Respuesta JSON muy grande (manual participante + tablas); sin esto el modelo corta y quedan secciones vacías o cortas.
+      max_completion_tokens: 16384,
       response_format: {
           type: 'json_schema',
           json_schema: {
@@ -442,7 +564,7 @@ Genera una respuesta en formato JSON de forma estricta.
     
     let generatedData;
     try {
-        generatedData = JSON.parse(generatedText)
+        generatedData = enforceEvaluationQuestionLimits(sanitizeGeneratedData(JSON.parse(generatedText)))
     }catch(e){
         throw new Error("Invalid formulation of JSON")
     }

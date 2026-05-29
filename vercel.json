@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "src/app/api/export/pdf/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "src/app/api/knowledge/upload/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}

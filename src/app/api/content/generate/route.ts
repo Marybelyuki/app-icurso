@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { generateModuleContent } from '@/lib/ai/claude'
 import type { GenerateRequest, GeneratedContent } from '@/types/content'
 
@@ -7,12 +7,7 @@ export const runtime = 'nodejs'
 export const maxDuration = 300
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return new Response('Unauthorized', { status: 401 })
-  }
+  const supabase = await createServiceClient()
 
   const body: GenerateRequest = await request.json()
   const { moduleId } = body

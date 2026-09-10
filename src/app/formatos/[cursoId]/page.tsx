@@ -44,7 +44,7 @@ export default async function FormatosPage({ params }: Props) {
             <GenerateFormatsButton courseId={cursoId} mode="regenerate" />
           </div>
           <iframe 
-            src={`/generador-formatos.html?cursoId=${cursoId}&curso=${encodeURIComponent(curso.name)}`} 
+            src={`/generador-formatos.html?cursoId=${cursoId}&curso=${encodeURIComponent(curso.name)}&v=20260310b`} 
             className="w-full h-full border-none m-0 p-0 block bg-slate-50 relative z-20"
             sandbox="allow-scripts allow-downloads allow-same-origin allow-modals allow-popups"
           />

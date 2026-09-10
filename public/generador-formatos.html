@@ -927,9 +927,7 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
         <div class="mp-subtitle"><span class="s-curso">Generador de Cursos</span></div>
 
-        <div class="mp-std-ref"><span class="s-norma">EC0217.01</span></div>
-
-        <div class="mp-author"><span class="s-inst">-</span><br>Diseñador / Coordinador del Curso</div>
+        <div class="mp-author"><span class="s-dis">-</span><br>Diseñador / Coordinador del Curso</div>
 
       </div>
 
@@ -993,9 +991,7 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
         <div class="mp-subtitle"><span class="s-curso">Generador de Cursos</span></div>
 
-        <div class="mp-std-ref">EC0301 / <span class="s-norma">EC0217.01</span></div>
-
-        <div class="mp-author"><span class="s-inst">-</span><br>Diseñador del curso</div>
+        <div class="mp-author"><span class="s-dis">-</span><br>Diseñador del curso</div>
 
       </div>
 
@@ -3390,10 +3386,12 @@ function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
     )
       .replace(/\s+/g, ' ')
       .trim();
-    const refLine = String(cover.querySelector('.mp-std-ref')?.textContent || '')
+    // Portada: sin códigos EC (EC0217 / EC0301). Nombre = Diseñador instruccional (f-dis).
+    const rawDesigner = String(g('f-dis') || cover.querySelector('.mp-author .s-dis')?.textContent || '')
       .replace(/\s+/g, ' ')
       .trim();
-    const authorEl = cover.querySelector('.mp-author');
+    const designerName = /^\[.*\]$/.test(rawDesigner) ? '' : rawDesigner;
+    const authorRole = isPart ? 'Diseñador / Coordinador del Curso' : 'Diseñador del curso';
     if (kicker) {
       cellParas.push(
         new Paragraph({
@@ -3418,7 +3416,7 @@ function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
       cellParas.push(
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          spacing: { after: 80 },
+          spacing: { after: 200 },
           children: [
             new TextRun({
               text: cursoLine.toUpperCase(),
@@ -3431,34 +3429,22 @@ function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
         })
       );
     }
-    if (refLine) {
+    if (designerName) {
       cellParas.push(
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          spacing: { after: 140 },
-          children: [
-            new TextRun({ text: refLine.toUpperCase(), bold: true, size: 24, font: 'Arial', color: BLUE }),
-          ],
+          spacing: { after: 40 },
+          children: [new TextRun({ text: designerName, size: 20, font: 'Arial', color: '000000' })],
         })
       );
     }
-    if (authorEl) {
-      const tmp = authorEl.cloneNode(true);
-      tmp.querySelectorAll('br').forEach((br) => br.replaceWith(document.createTextNode('\n')));
-      String(tmp.textContent || '')
-        .split('\n')
-        .map((l) => l.replace(/\s+/g, ' ').trim())
-        .filter(Boolean)
-        .forEach((line, i, arr) => {
-          cellParas.push(
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              spacing: { after: i < arr.length - 1 ? 40 : 0 },
-              children: [new TextRun({ text: line, size: 20, font: 'Arial', color: '000000' })],
-            })
-          );
-        });
-    }
+    cellParas.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 0 },
+        children: [new TextRun({ text: authorRole, size: 20, font: 'Arial', color: '000000' })],
+      })
+    );
   }
   if (cellParas.length === 0) {
     cellParas.push(new Paragraph({ text: '' }));

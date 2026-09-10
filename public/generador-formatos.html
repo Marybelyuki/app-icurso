@@ -996,7 +996,11 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
         <div class="mp-subtitle"><span class="s-curso">Generador de Cursos</span></div>
 
-        <div class="mp-author"><span class="s-dis">-</span><br>Diseñador del curso</div>
+        <div class="mp-author">
+          <div class="mp-cover-person"><span class="s-inst">-</span><br><span class="mp-cover-role">Instructor del curso</span></div>
+          <div class="mp-author-gap"></div>
+          <div class="mp-cover-person"><span class="s-dis">-</span><br><span class="mp-cover-role">Diseñador del curso</span></div>
+        </div>
 
       </div>
 
@@ -3319,8 +3323,89 @@ function appendEvaluacionesWordContent(children, root, dx){
 
 }
 
-/** Word: en clones fuera del documento, innerText suele coincidir con textContent y pierde saltos de <br> y entre <li>, pegando palabras. */
-const _WORD_CELL_NL = '\uE000';
+/** Word: inserta espacios faltantes entre números/letras/puntuación pegados (ej. 10personas, Duración:2hrs). */
+function ensureReadableSpaces(text) {
+  let s = String(text || '').replace(/\u00a0/g, ' ');
+  // b)Formativa  a)Diagnóstica
+  s = s.replace(/([a-z])\)([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])/g, '$1) $2');
+  // :2hrs  :listas  :Adultos  :80%
+  s = s.replace(/:([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])/g, ': $1');
+  // 10personas  2hrs  45cuadernillos
+  s = s.replace(/(\d)([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])/g, '$1 $2');
+  // del60%  valor40%  del80
+  s = s.replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])(\d)/g, '$1 $2');
+  // %mínimo (si quedara pegado)
+  s = s.replace(/%([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])/g, '% $1');
+  // Colapsar espacios múltiples (conservar saltos de línea)
+  s = s
+    .split('\n')
+    .map((line) => line.replace(/[ \t\f\v]+/g, ' ').trim())
+    .join('\n');
+  return s;
+}
+
+/**
+ * Extrae texto de una celda preservando espacios entre nodos inline.
+ * Evita el bug de textContent/innerHTML en clones: "10" + "cuadernillos" → "10cuadernillos".
+ */
+function extractDomTextWithSpaces(root) {
+  if (!root) return '';
+  let result = '';
+  const needsSpaceBetween = (left, right) => {
+    if (!left || !right) return false;
+    const a = left.slice(-1);
+    const b = right.charAt(0);
+    if (!a || !b) return false;
+    if (/\s/.test(a) || /\s/.test(b)) return false;
+    if (a === '\n' || b === '\n') return false;
+    if (/[([{¿¡/]/.test(a) || /[)\]}.,;:!?%]/.test(b)) return false;
+    // digit|letter, letter|digit, punct|alnum, )|letter
+    if (/\d/.test(a) && /[A-Za-zÁÉÍÓÚÜáéíóúüñÑ]/.test(b)) return true;
+    if (/[A-Za-zÁÉÍÓÚÜáéíóúüñÑ]/.test(a) && /\d/.test(b)) return true;
+    if (/[.:;!?]/.test(a) && /[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]/.test(b)) return true;
+    if (a === ')' && /[A-Za-zÁÉÍÓÚÜáéíóúüñÑ]/.test(b)) return true;
+    // Dos fragmentos alfanuméricos de nodos distintos (</strong><span>)
+    if (/[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9%]/.test(a) && /[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]/.test(b)) return true;
+    return false;
+  };
+  const append = (chunk) => {
+    const t = String(chunk || '').replace(/\u00a0/g, ' ');
+    if (!t) return;
+    if (needsSpaceBetween(result, t)) result += ' ';
+    result += t;
+  };
+  const walk = (node) => {
+    if (!node) return;
+    if (node.nodeType === Node.TEXT_NODE) {
+      append(node.nodeValue);
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const tag = node.tagName.toLowerCase();
+    if (tag === 'script' || tag === 'style') return;
+    if (tag === 'br') {
+      result += '\n';
+      return;
+    }
+    if (tag === 'li') {
+      if (result && !/\n\s*$/.test(result)) result += '\n';
+      append('\u2022 ');
+      Array.from(node.childNodes).forEach(walk);
+      return;
+    }
+    if (tag === 'p' || tag === 'div' || tag === 'tr' || /^h[1-6]$/.test(tag)) {
+      if (result && !/\n\s*$/.test(result)) result += '\n';
+      Array.from(node.childNodes).forEach(walk);
+      if (result && !/\n\s*$/.test(result)) result += '\n';
+      return;
+    }
+    Array.from(node.childNodes).forEach(walk);
+  };
+  walk(root);
+  return ensureReadableSpaces(result);
+}
+
+/** Word: en clones fuera del documento, textContent puede pegar palabras entre spans. */
 function tableCellToMultilinePlainText(cell) {
   if (!cell) return '';
   const directDl = cell.querySelector(':scope > ul.dl, :scope > ul.dl-in-table');
@@ -3328,36 +3413,15 @@ function tableCellToMultilinePlainText(cell) {
     const items = directDl.querySelectorAll(':scope > li');
     if (items.length > 0) {
       return Array.from(items)
-        .map((li) => '\u2022 ' + String(li.textContent || '').replace(/\s+/g, ' ').trim())
-        .filter((line) => line.length > 2)
+        .map((li) => ensureReadableSpaces('\u2022 ' + extractDomTextWithSpaces(li).replace(/^\u2022\s*/, '')))
+        .filter((line) => line.replace(/^\u2022\s*/, '').trim().length > 0)
         .join('\n');
     }
   }
-  const rawHtml = cell.innerHTML;
-  if (!rawHtml || !String(rawHtml).trim()) {
-    return String(cell.textContent || '').replace(/\u00a0/g, ' ').replace(/\r/g, '').trim();
-  }
-  let h = rawHtml.replace(/\r/g, '');
-  h = h.replace(/<br\s*\/?>/gi, _WORD_CELL_NL);
-  h = h.replace(/<\/li>\s*<li[^>]*>/gi, _WORD_CELL_NL);
-  h = h.replace(/<\/p>\s*<p[^>]*>/gi, _WORD_CELL_NL);
-  h = h.replace(/<\/div>\s*<div[^>]*>/gi, _WORD_CELL_NL);
-  h = h.replace(/<\/h[1-6]>\s*<h[1-6][^>]*>/gi, _WORD_CELL_NL);
-  const tmp = document.createElement('div');
-  tmp.innerHTML = h;
-  let s = tmp.textContent || '';
-  s = s.replace(/\u00a0/g, ' ');
-  s = s.replace(new RegExp(_WORD_CELL_NL, 'g'), '\n');
-  s = s.replace(/([.:;?!])([a-z]\))/gi, '$1 $2');
-  s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  s = s
-    .split('\n')
-    .map((line) => line.replace(/[ \t\f\v]+/g, ' ').trim())
-    .join('\n');
-  return s.trim();
+  return extractDomTextWithSpaces(cell).trim();
 }
 
-/** Portada enmarcada + bloque INDICE con guía punteada (manuales participante / instructor → Word). */
+/** Portada a página completa + índice en la página siguiente (manuales → Word). */
 function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
   const {
     Paragraph,
@@ -3371,133 +3435,157 @@ function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
     TabStopType,
     LeaderType,
     TabStopPosition,
+    VerticalAlign,
+    HeightRule,
   } = dx;
   const isPart = sourceEl.id === 'doc-part';
   const cover = sourceEl.querySelector(isPart ? '.mp-cover' : '.mi-cover');
   const indexBox = sourceEl.querySelector(isPart ? '#ai-mp-index' : '#ai-mi-index');
-  const BLUE = '2F5496';
+  const BLUE = '1E3C72';
   const coverCellBorders = {
-    top: { style: BorderStyle.SINGLE, size: 18, color: BLUE },
-    bottom: { style: BorderStyle.SINGLE, size: 18, color: BLUE },
-    left: { style: BorderStyle.SINGLE, size: 18, color: BLUE },
-    right: { style: BorderStyle.SINGLE, size: 18, color: BLUE },
+    top: { style: BorderStyle.SINGLE, size: 24, color: BLUE },
+    bottom: { style: BorderStyle.SINGLE, size: 24, color: BLUE },
+    left: { style: BorderStyle.SINGLE, size: 24, color: BLUE },
+    right: { style: BorderStyle.SINGLE, size: 24, color: BLUE },
   };
+
+  const cleanPerson = (v) => {
+    const s = String(v || '').replace(/\s+/g, ' ').trim();
+    if (!s || s === '-' || /^\[.*\]$/.test(s)) return '';
+    return s;
+  };
+
+  const kicker = String(cover?.querySelector('.mp-kicker')?.textContent || '').replace(/\s+/g, ' ').trim();
+  const titlePart = String(cover?.querySelector('.mp-title')?.textContent || '').replace(/\s+/g, ' ').trim();
+  const cursoLine = String(
+    (cursoCapturado || '').trim() || cover?.querySelector('.mp-subtitle')?.textContent || ''
+  )
+    .replace(/\s+/g, ' ')
+    .trim();
+  const instructorName = cleanPerson(g('f-inst') || cover?.querySelector('.mp-author .s-inst')?.textContent);
+  const designerName = cleanPerson(g('f-dis') || cover?.querySelector('.mp-author .s-dis')?.textContent);
+
   const cellParas = [];
-  if (cover) {
-    const kicker = String(cover.querySelector('.mp-kicker')?.textContent || '').replace(/\s+/g, ' ').trim();
-    const titlePart = String(cover.querySelector('.mp-title')?.textContent || '').replace(/\s+/g, ' ').trim();
-    const cursoLine = String(
-      (cursoCapturado || '').trim() || cover.querySelector('.mp-subtitle')?.textContent || ''
-    )
-      .replace(/\s+/g, ' ')
-      .trim();
-    // Portada: sin códigos EC. Participante = instructor + diseñador (campos f-inst / f-dis).
-    const cleanPerson = (v) => {
-      const s = String(v || '').replace(/\s+/g, ' ').trim();
-      if (!s || s === '-' || /^\[.*\]$/.test(s)) return '';
-      return s;
-    };
-    const instructorName = cleanPerson(g('f-inst') || cover.querySelector('.mp-author .s-inst')?.textContent);
-    const designerName = cleanPerson(g('f-dis') || cover.querySelector('.mp-author .s-dis')?.textContent);
-    if (kicker) {
+  const pushEmpty = (after = 200) => {
+    cellParas.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after }, children: [] }));
+  };
+
+  // Espacio superior para que el título no quede pegado al borde
+  pushEmpty(600);
+  pushEmpty(400);
+
+  if (kicker) {
+    cellParas.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 80 },
+        children: [new TextRun({ text: kicker.toUpperCase(), size: 28, font: 'Arial', color: '000000' })],
+      })
+    );
+  }
+  if (titlePart) {
+    cellParas.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 360 },
+        children: [
+          new TextRun({ text: titlePart.toUpperCase(), bold: true, size: 56, font: 'Arial', color: '000000' }),
+        ],
+      })
+    );
+  }
+  if (cursoLine) {
+    cellParas.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },
+        children: [
+          new TextRun({
+            text: cursoLine.toUpperCase(),
+            bold: true,
+            size: 32,
+            font: 'Arial',
+            color: BLUE,
+          }),
+        ],
+      })
+    );
+  }
+
+  // Espacio central: empuja nombres hacia la zona inferior de la portada
+  for (let i = 0; i < 8; i++) pushEmpty(280);
+
+  const pushPersonBlock = (name, role, isLast) => {
+    if (name) {
       cellParas.push(
         new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { after: 60 },
-          children: [new TextRun({ text: kicker.toUpperCase(), size: 20, font: 'Arial', color: '000000' })],
+          children: [new TextRun({ text: name, size: 22, font: 'Arial', color: '000000' })],
         })
       );
     }
-    if (titlePart) {
-      cellParas.push(
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 120 },
-          children: [
-            new TextRun({ text: titlePart.toUpperCase(), bold: true, size: 56, font: 'Arial', color: '000000' }),
-          ],
-        })
-      );
-    }
-    if (cursoLine) {
-      cellParas.push(
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 200 },
-          children: [
-            new TextRun({
-              text: cursoLine.toUpperCase(),
-              bold: true,
-              size: 28,
-              font: 'Arial',
-              color: BLUE,
-            }),
-          ],
-        })
-      );
-    }
-    const pushPersonBlock = (name, role, isLast) => {
-      if (name) {
-        cellParas.push(
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 40 },
-            children: [new TextRun({ text: name, size: 20, font: 'Arial', color: '000000' })],
-          })
-        );
-      }
-      cellParas.push(
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { after: isLast ? 0 : 160 },
-          children: [new TextRun({ text: role, size: 20, font: 'Arial', color: '000000' })],
-        })
-      );
-    };
-    if (isPart) {
-      pushPersonBlock(instructorName, 'Instructor del curso', false);
-      pushPersonBlock(designerName, 'Diseñador del curso', true);
-    } else {
-      pushPersonBlock(designerName || instructorName, 'Diseñador del curso', true);
-    }
-  }
+    cellParas.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: isLast ? 200 : 280 },
+        children: [new TextRun({ text: role, size: 20, font: 'Arial', color: '000000' })],
+      })
+    );
+  };
+
+  // Ambos manuales: instructor + diseñador (sin códigos EC ni "Coordinador")
+  pushPersonBlock(instructorName, 'Instructor del curso', false);
+  pushPersonBlock(designerName, 'Diseñador del curso', true);
+  pushEmpty(400);
+
   if (cellParas.length === 0) {
     cellParas.push(new Paragraph({ text: '' }));
   }
+
+  // Alto ≈ área útil Letter (márgenes 1") para marco de portada completa
+  const COVER_ROW_H = 12200;
   const coverColW =
     TabStopPosition != null && typeof TabStopPosition.MAX === 'number' ? TabStopPosition.MAX : 9026;
+
+  const rowOpts = {
+    children: [
+      new TableCell({
+        children: cellParas,
+        borders: coverCellBorders,
+        width: { size: coverColW, type: WidthType.DXA },
+        margins: { top: 360, bottom: 360, left: 360, right: 360 },
+        ...(VerticalAlign ? { verticalAlign: VerticalAlign.CENTER } : {}),
+      }),
+    ],
+  };
+  if (HeightRule) {
+    rowOpts.height = { value: COVER_ROW_H, rule: HeightRule.EXACT };
+  }
+
   children.push(
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       columnWidths: [coverColW],
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              children: cellParas,
-              borders: coverCellBorders,
-              margins: { top: 220, bottom: 220, left: 220, right: 220 },
-            }),
-          ],
-        }),
-      ],
+      rows: [new TableRow(rowOpts)],
     })
   );
-  children.push(new Paragraph({ text: '', spacing: { after: 200 } }));
 
+  // Índice en página siguiente
   children.push(
     new Paragraph({
       children: [
         new TextRun({
           text: 'ÍNDICE',
           bold: true,
-          size: 24,
+          size: 28,
           font: 'Arial',
-          color: isPart ? '000000' : BLUE,
+          color: BLUE,
         }),
       ],
       alignment: AlignmentType.LEFT,
-      spacing: { before: 120, after: 100 },
+      pageBreakBefore: true,
+      spacing: { before: 0, after: 120 },
       border: {
         bottom: { style: BorderStyle.SINGLE, size: 24, color: BLUE, space: 2 },
       },
@@ -3531,7 +3619,7 @@ function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
       children.push(
         new Paragraph({
           children: rowChildren,
-          spacing: { before: 0, after: 0 },
+          spacing: { before: 40, after: 40 },
           border: {
             bottom: { style: BorderStyle.SINGLE, size: 4, color: 'D0D0D0', space: 1 },
           },
@@ -3646,6 +3734,8 @@ function buildWordDoc(el,name,opts={}){
   const TabStopType = docx.TabStopType;
   const LeaderType = docx.LeaderType;
   const TabStopPosition = docx.TabStopPosition;
+  const VerticalAlign = docx.VerticalAlign;
+  const HeightRule = docx.HeightRule;
   const { silent = false, fileNameOverride = '', evalExportMode = 'all' } = opts;
 
   const children=[];
@@ -3682,6 +3772,8 @@ function buildWordDoc(el,name,opts={}){
         TabStopType,
         LeaderType,
         TabStopPosition,
+        VerticalAlign,
+        HeightRule,
       }, cursoCapturado);
     } else {
       children.push(new Paragraph({
@@ -3861,7 +3953,7 @@ function buildWordDoc(el,name,opts={}){
 
       children.push(new Paragraph({
 
-        text:node.textContent.trim(),
+        text:ensureReadableSpaces(extractDomTextWithSpaces(node) || node.textContent.trim()),
 
         heading:HeadingLevel.HEADING_2,
 
@@ -3871,7 +3963,7 @@ function buildWordDoc(el,name,opts={}){
 
     } else if(tag==='p'&&node.textContent.trim()&&!node.querySelector('h3,h4,table')){
 
-      const txt=node.textContent.trim();
+      const txt=ensureReadableSpaces(extractDomTextWithSpaces(node) || node.textContent.trim());
 
       if(txt.length>2){
 
@@ -3889,7 +3981,7 @@ function buildWordDoc(el,name,opts={}){
 
       children.push(new Paragraph({
 
-        children:[new TextRun({text:'• '+node.textContent.trim(),size:20})],
+        children:[new TextRun({text:'• '+ensureReadableSpaces(extractDomTextWithSpaces(node) || node.textContent.trim()),size:20})],
 
         spacing:{after:80},
 
@@ -3899,7 +3991,7 @@ function buildWordDoc(el,name,opts={}){
 
     } else if((tag==='td'||tag==='th')&&!node.querySelector('td,th')){
 
-      const txt=node.textContent.trim();
+      const txt=ensureReadableSpaces(extractDomTextWithSpaces(node) || node.textContent.trim());
 
       if(txt.length>1){
 
@@ -3921,7 +4013,7 @@ function buildWordDoc(el,name,opts={}){
 
         children.push(new Paragraph({
 
-          children:[new TextRun({text:'• '+node.textContent.trim().replace('✓','').trim(),size:20})],
+          children:[new TextRun({text:'• '+ensureReadableSpaces((extractDomTextWithSpaces(node) || node.textContent.trim()).replace('✓','')).trim(),size:20})],
 
           spacing:{after:80},
 
@@ -3933,7 +4025,7 @@ function buildWordDoc(el,name,opts={}){
 
         const chunks = String(node.innerHTML || '').split(/<br\s*\/?>/i).map(function (chunk) {
 
-          return chunk.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+          return ensureReadableSpaces(chunk.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
 
         }).filter(function (s) { return s.length > 0; });
 
@@ -3951,7 +4043,7 @@ function buildWordDoc(el,name,opts={}){
 
       } else if(node.classList.contains('mp-highlight')||node.classList.contains('mi-box')){
 
-        const txt=node.textContent.trim();
+        const txt=ensureReadableSpaces(extractDomTextWithSpaces(node) || node.textContent.trim());
 
         if(txt.length>2){
 
@@ -4015,6 +4107,10 @@ function buildWordDoc(el,name,opts={}){
 
 
 
+  const pageMargin = isManualWord
+    ? { top: 720, right: 720, bottom: 720, left: 720 }
+    : { top: 1440, right: 1440, bottom: 1440, left: 1440 };
+
   const doc=new Document({
 
     creator:inst,
@@ -4032,12 +4128,7 @@ function buildWordDoc(el,name,opts={}){
             height:15840,
             orientation:PageOrientation.PORTRAIT
           },
-          margin:{
-            top:1440,
-            right:1440,
-            bottom:1440,
-            left:1440
-          }
+          margin: pageMargin
         }
       },
 

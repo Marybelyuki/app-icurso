@@ -1602,7 +1602,9 @@ function getCurrentCourseNormReference(){
 }
 
 function normalizeCourseNormText(text){
-  const value = String(text || '');
+  let value = String(text || '');
+  value = value.replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])([«"“])/g, '$1 $2');
+  value = value.replace(/([»"”])([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])/g, '$1 $2');
   const normRef = getCurrentCourseNormReference();
   const cleanRedundancies = (raw) => {
     let out = String(raw || '').replace(/\s+/g, ' ').trim();
@@ -1674,88 +1676,77 @@ function enforceNormConsistencyInManualParticipante(){
 
 /** Temario manual participante: formato impreso 1. / ● / o (como guía SDI), alimentado por carta y evaluaciones. */
 function buildTemarioParticipantListaHtml(data){
-  const isCoffeeBreakText = (txt) => /\breceso\b|\bservicio\s+de\s+caf[eé]\b|\bcaf[eé]\b/i.test(String(txt || '').toLowerCase());
+  const isCoffeeBreakText = (txt) => isCoffeeOrBreakLabel(txt);
   const participantModules = Array.isArray(data.modulos)
     ? data.modulos.filter((m) => !isCoffeeBreakText(m && m.titulo))
     : [];
   const esc = (s) => normalizeCourseNormText(String(s == null ? '' : s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const bulletLine = (text) =>
-    `<div class="mp-tem-item"><span class="mp-tem-disc">●</span><span class="mp-tem-line">${esc(String(text || '').replace(/\s+/g, ' ').trim())}</span></div>`;
+  const bulletLine = (text) => {
+    const t = sanitizeManualPlainChunk(String(text || ''));
+    if (!t || isCoffeeBreakText(t)) return '';
+    return `<div class="mp-tem-item"><span class="mp-tem-disc">●</span><span class="mp-tem-line">${esc(t)}</span></div>`;
+  };
   const bulletWithSubs = (label, subs) => {
-    let h = `<div class="mp-tem-item"><span class="mp-tem-disc">●</span><span class="mp-tem-line">${esc(String(label || '').trim())}</span></div>`;
+    const main = sanitizeManualPlainChunk(String(label || ''));
+    if (!main || isCoffeeBreakText(main)) return '';
+    let h = `<div class="mp-tem-item"><span class="mp-tem-disc">●</span><span class="mp-tem-line">${esc(main)}</span></div>`;
+    const seenSub = new Set();
     (subs || []).forEach((sub) => {
-      const t = String(sub || '').trim();
-      if (t) h += `<div class="mp-tem-sub"><span class="mp-tem-o">o</span>${esc(t)}</div>`;
+      const t = sanitizeManualPlainChunk(String(sub || ''));
+      if (!t || isCoffeeBreakText(t)) return;
+      const k = t.toLowerCase();
+      if (seenSub.has(k)) return;
+      seenSub.add(k);
+      h += `<div class="mp-tem-sub"><span class="mp-tem-o">o</span>${esc(t)}</div>`;
     });
     return h;
   };
   const parseNombreBloque = (raw) => {
-    const s = String(raw || '').trim();
+    const s = sanitizeManualPlainChunk(String(raw || '').trim());
     if (!s) return { main: '', subs: [] };
     const idx = s.indexOf(':');
     if (idx === -1) return { main: s, subs: [] };
     const head = s.slice(0, idx).trim();
     const tail = s.slice(idx + 1).trim();
-    if (!tail) return { main: head + ':', subs: [] };
+    if (!tail) return { main: head, subs: [] };
     const parts = tail
       .split(/\s*(?:[,;]|\by\b)\s*/i)
-      .map((x) => x.trim())
-      .filter((x) => x.length > 0 && x.length < 120);
-    if (parts.length >= 2) return { main: head + ':', subs: parts };
+      .map((x) => sanitizeManualPlainChunk(x))
+      .filter((x) => x.length > 0 && x.length < 120 && !isCoffeeBreakText(x));
+    if (parts.length >= 2) return { main: head, subs: parts };
     return { main: s, subs: [] };
-  };
-  const flattenTemas = (temas) => {
-    if (temas == null || temas === '') return [];
-    const normOne = (t) => {
-      if (t == null || t === '') return '';
-      if (typeof t === 'string') return t.trim();
-      if (typeof t === 'object') {
-        const s = t.tema ?? t.titulo ?? t.texto ?? t.descripcion ?? t.subtema ?? t.nombre;
-        if (s != null && String(s).trim()) return String(s).trim();
-      }
-      const s = String(t).trim();
-      return s === '[object Object]' ? '' : s;
-    };
-    if (Array.isArray(temas)) return temas.map(normOne).filter(Boolean);
-    const s = String(temas).trim();
-    if (!s) return [];
-    if (/\n/.test(s)) return s.split(/\n+/).map((x) => x.replace(/^[•\-\u2013\u2014]\s*/, '').trim()).filter(Boolean);
-    return [s];
   };
 
   let html = '<div class="mp-temario-formato">';
-  const op = data.objetivos_particulares || {};
-  const hasStructured = !!(op.cognitivo && op.psicomotor && op.afectivo);
   let bloqueCount = 0;
+  const seenTema = new Set();
 
-  if (hasStructured) {
-    const bloques = [
-      { n: 'Objetivo cognitivo del curso', temas: op.cognitivo.temas, dom: 'cognitivo' },
-      { n: 'Objetivo psicomotor del curso', temas: op.psicomotor.temas, dom: 'psicomotor' },
-      { n: 'Objetivo afectivo del curso', temas: op.afectivo.temas, dom: 'afectivo' }
-    ];
-    bloques.forEach((bl, bi) => {
-      bloqueCount++;
-      html += `<div class="mp-tem-bloque"><p class="mp-tem-num">${bloqueCount}. ${esc(bl.n)}</p>`;
-      const arr = flattenTemas(bl.temas);
-      if (!arr.length) html += bulletLine('Contenidos según carta descriptiva y sesiones del curso.');
-      else
-        arr.forEach((t, ti) => {
-          html += bulletLine(ensureTemaConVerbo(t, bl.dom, ti));
-        });
-      html += '</div>';
-    });
-  } else if (participantModules.length) {
+  // Priorizar temas reales del desarrollo (módulos), no los "objetivos cognitivo/psicomotor/afectivo"
+  if (participantModules.length) {
     participantModules.forEach((m, mi) => {
+      const tit = sanitizeManualPlainChunk(String(m.titulo || `Tema ${mi + 1}`).replace(/^\s*\d+\.[\s\u00a0]*/, ''));
+      if (!tit || isCoffeeBreakText(tit)) return;
+      const temaKey = tit.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (seenTema.has(temaKey)) return;
+      seenTema.add(temaKey);
       bloqueCount++;
-      const tit = String(m.titulo || `Tema ${mi + 1}`).replace(/^\s*\d+\.[\s\u00a0]*/, '');
       html += `<div class="mp-tem-bloque"><p class="mp-tem-num">${bloqueCount}. ${esc(tit)}</p>`;
       const sec = m.secuencia_didactica;
+      const seenBlock = new Set();
       if (Array.isArray(sec) && sec.length) {
         sec.forEach((b) => {
           if (isCoffeeBreakText(b && b.nombre_bloque)) return;
           const parsed = parseNombreBloque(b.nombre_bloque);
-          if (parsed.main && parsed.subs.length) html += bulletWithSubs(parsed.main, parsed.subs);
+          const bk = (parsed.main || '').toLowerCase();
+          if (!bk || seenBlock.has(bk)) return;
+          seenBlock.add(bk);
+          const uniqueSubs = (parsed.subs || []).filter((s) => {
+            const sk = s.toLowerCase();
+            if (seenBlock.has(sk)) return false;
+            seenBlock.add(sk);
+            return true;
+          });
+          if (uniqueSubs.length) html += bulletWithSubs(parsed.main, uniqueSubs);
           else if (parsed.main) html += bulletLine(parsed.main);
         });
       } else {
@@ -1766,60 +1757,48 @@ function buildTemarioParticipantListaHtml(data){
       html += '</div>';
     });
   } else {
-    return '<div class="mp-temario-formato"><p>Genere el curso para obtener el temario alineado a la carta descriptiva.</p></div>';
+    const op = data.objetivos_particulares || {};
+    const hasStructured = !!(op.cognitivo && op.psicomotor && op.afectivo);
+    if (hasStructured) {
+      const bloques = [
+        { n: 'Objetivo cognitivo del curso', temas: op.cognitivo.temas, dom: 'cognitivo' },
+        { n: 'Objetivo psicomotor del curso', temas: op.psicomotor.temas, dom: 'psicomotor' },
+        { n: 'Objetivo afectivo del curso', temas: op.afectivo.temas, dom: 'afectivo' }
+      ];
+      bloques.forEach((bl) => {
+        bloqueCount++;
+        html += `<div class="mp-tem-bloque"><p class="mp-tem-num">${bloqueCount}. ${esc(bl.n)}</p>`;
+        const arr = flattenTemasMp(bl.temas);
+        if (!arr.length) html += bulletLine('Contenidos según carta descriptiva y sesiones del curso.');
+        else {
+          const seen = new Set();
+          arr.forEach((t, ti) => {
+            const line = sanitizeManualPlainChunk(ensureTemaConVerbo(t, bl.dom, ti));
+            const k = line.toLowerCase();
+            if (!line || seen.has(k)) return;
+            seen.add(k);
+            html += bulletLine(line);
+          });
+        }
+        html += '</div>';
+      });
+    } else {
+      return '<div class="mp-temario-formato"><p>Genere el curso para obtener el temario alineado a la carta descriptiva.</p></div>';
+    }
   }
-
-  const normKey = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
-  const findFormativa = (modTit) => {
-    const arr = data.evaluacion_formativa;
-    if (!Array.isArray(arr) || !arr.length) return null;
-    const b = normKey(modTit);
-    let best = arr[0];
-    let score = -1;
-    arr.forEach((f) => {
-      const a = normKey(f.modulo_titulo);
-      if (!a) return;
-      let sc = 0;
-      if (b && a === b) sc = 100;
-      else if (b && (b.includes(a) || a.includes(b))) sc = 75;
-      else if (b) a.split(/\s+/).filter((w) => w.length > 4).forEach((w) => { if (b.includes(w)) sc += 8; });
-      if (sc > score) { score = sc; best = f; }
-    });
-    return score >= 8 ? best : arr[0];
-  };
 
   bloqueCount++;
   html += `<div class="mp-tem-bloque"><p class="mp-tem-num">${bloqueCount}. Verificación del aprendizaje (evaluaciones)</p>`;
   html += bulletLine('Evaluación formativa (Anexo 3): guía de observación / lista de cotejo por tema, con criterios observables alineados al temario.');
-  if (Array.isArray(data.evaluacion_formativa) && data.evaluacion_formativa.length) {
-    if (hasStructured) {
-      const f0 = data.evaluacion_formativa[0];
-      const crits = (f0.criterios || []).slice(0, 4).map((c) => (String(c).length > 140 ? String(c).slice(0, 137) + '…' : String(c)));
-      if (crits.length) html += bulletWithSubs('Ejemplos de criterios que se observan en aula:', crits);
-    } else {
-      participantModules.forEach((m) => {
-        const f = findFormativa(m.titulo);
-        if (!f || !f.criterios || !f.criterios.length) return;
-        const short = f.criterios.slice(0, 2).map((c) => (String(c).length > 130 ? String(c).slice(0, 127) + '…' : String(c)));
-        html += bulletWithSubs(`Tema «${String(m.titulo || '').trim()}»:`, short);
-      });
-    }
-  }
-  const sum = data.evaluacion_sumativa;
-  if (Array.isArray(sum) && sum.length) {
+  const sum = Array.isArray(data.evaluacion_sumativa) ? data.evaluacion_sumativa : [];
+  if (sum.length) {
     html += bulletLine(`Evaluación sumativa (Anexo 4): ${sum.length} reactivos de opción múltiple al cierre del curso.`);
-    const muestra = sum.slice(0, 4).map((q) => {
-      const p = String(q.pregunta || '').replace(/\s+/g, ' ').trim();
-      return p.length > 110 ? p.slice(0, 107) + '…' : p;
-    });
-    html += bulletWithSubs('Contenidos que el instrumento sumativo verifica (muestra):', muestra);
   } else {
     html += bulletLine('Evaluación sumativa (Anexo 4): instrumento escrito de cierre.');
   }
   html += '</div>';
-
-  html +=
-    '<p class="mp-tem-nota">El orden y los contenidos corresponden a la Carta Descriptiva y a los anexos de evaluación generados para este curso.</p></div>';
+  html += '<p class="mp-tem-nota">El orden y los contenidos corresponden a la Carta Descriptiva y a los anexos de evaluación generados para este curso.</p>';
+  html += '</div>';
   return html;
 }
 
@@ -1831,13 +1810,43 @@ function mapManualContenidoArrayToHtml(p){
   let chunks = p.contenido;
   if (typeof chunks === 'string') chunks = [chunks];
   if (!Array.isArray(chunks)) return '';
-  return chunks.map((c) => {
-    const text = normalizeCourseNormText(c).trim();
-    if (!text) return '';
-    if (text.startsWith('<')) return text;
-    if (text.startsWith('-') || text.startsWith('•')) return `<ul class="mp-ul-bullets"><li>${text.replace(/^[•\-\s]+/, '')}</li></ul>`;
-    return `<p class="mp-para">${mpManualEsc(text)}</p>`;
-  }).filter(Boolean).join('');
+  const bulletItems = [];
+  const blocks = [];
+  const flushBullets = () => {
+    if (!bulletItems.length) return;
+    blocks.push('<ul class="mp-ul-bullets">' + bulletItems.map((t) => `<li>${mpManualEsc(t)}</li>`).join('') + '</ul>');
+    bulletItems.length = 0;
+  };
+  chunks.forEach((c) => {
+    let text = normalizeCourseNormText(c).trim();
+    if (!text) return;
+    if (text.startsWith('<')) {
+      flushBullets();
+      // Limpiar "A " sueltos y dobles viñetas dentro de HTML de la IA
+      text = text
+        .replace(/>\s*A[\.\)]\s+/gi, '>')
+        .replace(/>\s*A\s+(?=[a-záéíóúüñ])/gi, '>')
+        .replace(/[•●]\s*[•●]/g, '•')
+        .replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])([«"“])/g, '$1 $2');
+      blocks.push(text);
+      return;
+    }
+    const cleaned = sanitizeManualPlainChunk(text);
+    if (!cleaned) return;
+    const looksBullet =
+      /^[•●\-\u2013\u2014]/.test(text) ||
+      /^A[\.\)]\s+/i.test(text.trim()) ||
+      /^A\s+[a-záéíóúüñ]/i.test(text.trim()) ||
+      (cleaned.length < 180 && !/[.!?]$/.test(cleaned) && cleaned.split(/\s+/).length <= 18);
+    if (looksBullet || /^[•●\-]/.test(text) || /^A[\.\)]?\s+/i.test(text.trim())) {
+      bulletItems.push(cleaned);
+      return;
+    }
+    flushBullets();
+    blocks.push(`<p class="mp-para">${mpManualEsc(cleaned)}</p>`);
+  });
+  flushBullets();
+  return blocks.join('');
 }
 
 function mpCursoNombreCorto(){
@@ -1881,14 +1890,18 @@ function buildMpObjetivosDelCurso(data){
   const general = [og.sujeto, og.accion, og.condicion].filter(Boolean).map((x) => normalizeCourseNormText(x).trim()).join(' ');
   const op = data.objetivos_particulares || {};
   let h = '<h4 class="mp-h4-sec">Objetivo General</h4>';
-  h += `<p class="mp-para">${mpManualEsc(general || 'El participante, al finalizar el curso, integrará los aprendizajes descritos en la carta descriptiva y aplicará los criterios del curso en su contexto laboral.')}</p>`;
+  h += `<p class="mp-para">${mpManualEsc(sanitizeManualPlainChunk(general) || 'El participante, al finalizar el curso, integrará los aprendizajes descritos en la carta descriptiva y aplicará los criterios del curso en su contexto laboral.')}</p>`;
   h += '<h4 class="mp-h4-sec">Objetivos Específicos</h4>';
   ['cognitivo','psicomotor','afectivo'].forEach((dom) => {
     const o = op[dom];
     if (!o) return;
     let acc = normalizeCourseNormText(o.accion || '').replace(/\s+/g, ' ').trim();
     if (!acc) return;
-    if (!/^el participante/i.test(acc)) acc = 'El Participante, al finalizar el curso ' + acc.charAt(0).toLowerCase() + acc.slice(1);
+    // Evitar "El Participante, al finalizar el curso al finalizar el curso, ..."
+    acc = acc.replace(/^(el participante[,:\s]*)+/i, '').trim();
+    acc = acc.replace(/^(al finalizar el curso[,:\s]*)+/i, '').trim();
+    if (!acc) return;
+    acc = 'El participante, al finalizar el curso, ' + acc.charAt(0).toLowerCase() + acc.slice(1);
     h += `<p class="mp-para">${mpManualEsc(acc)}</p>`;
   });
   return h;
@@ -1916,17 +1929,32 @@ function flattenTemasMp(temas){
 function buildMpQueAprenderas(data){
   const op = data.objetivos_particulares || {};
   const lines = [];
+  const seen = new Set();
   ['cognitivo','psicomotor','afectivo'].forEach((dom) => {
     flattenTemasMp(op[dom] && op[dom].temas).forEach((t) => {
-      const base = ensureTemaConVerbo(t, dom, lines.length).replace(/</g,'&lt;');
-      const rest = base.charAt(0).toLowerCase() + base.slice(1);
-      lines.push(`A ${rest}`);
+      let base = sanitizeManualPlainChunk(ensureTemaConVerbo(t, dom, lines.length));
+      if (!base) return;
+      // Frase en 2ª persona para el participante
+      base = base.replace(/^(El participante[, ]*)?(al finalizar el curso[, ]*)*/i, '').trim();
+      if (!base) return;
+      const key = base.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (seen.has(key)) return;
+      seen.add(key);
+      lines.push(base.charAt(0).toUpperCase() + base.slice(1));
     });
   });
   if (!lines.length && Array.isArray(data.modulos)) {
-    data.modulos.forEach((m) => { lines.push(`A aplicar con criterio técnico los contenidos del tema: ${String(m.titulo || '').trim()}.`); });
+    data.modulos.forEach((m) => {
+      if (isCoffeeOrBreakLabel(m && m.titulo)) return;
+      const tit = String(m.titulo || '').trim();
+      if (!tit) return;
+      lines.push(`Aplicar con criterio técnico los contenidos del tema: ${tit}.`);
+    });
   }
-  return lines.map((l) => `<p class="mp-para">${mpManualEsc(l)}</p>`).join('');
+  if (!lines.length) {
+    return '<p class="mp-para">Al finalizar el curso habrás integrado los aprendizajes del temario y las evaluaciones de la carta descriptiva.</p>';
+  }
+  return '<ul class="mp-ul-bullets">' + lines.map((l) => `<li>${mpManualEsc(l)}</li>`).join('') + '</ul>';
 }
 
 function buildMpMetodologia(data){
@@ -1979,38 +2007,56 @@ function buildMpBeneficios(data){
 }
 
 function buildMpConceptosClave(data){
-  const mods = Array.isArray(data.modulos) ? data.modulos : [];
+  const mods = Array.isArray(data.modulos) ? data.modulos.filter((m) => !isCoffeeOrBreakLabel(m && m.titulo)) : [];
   const temaNom = mpCursoNombreCorto();
+  const defs = [];
+  const seen = new Set();
+  mods.forEach((m) => {
+    (m.secuencia_didactica || []).forEach((b) => {
+      const nb = sanitizeManualPlainChunk(String(b.nombre_bloque || '').trim());
+      if (!nb || isCoffeeOrBreakLabel(nb)) return;
+      const label = nb.split(':')[0].trim();
+      const key = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (!label || seen.has(key)) return;
+      seen.add(key);
+      defs.push(label);
+    });
+  });
   let h = '';
-  if (mods.length) {
-    const b0 = (mods[0].secuencia_didactica && mods[0].secuencia_didactica[0]) ? String(mods[0].secuencia_didactica[0].nombre_bloque || '').trim() : '';
-    const b1 = (mods[0].secuencia_didactica && mods[0].secuencia_didactica[1]) ? String(mods[0].secuencia_didactica[1].nombre_bloque || '').trim() : '';
-    const head0 = b0 ? b0.split(':')[0].trim() : '';
-    const head1 = b1 ? b1.split(':')[0].trim() : '';
-    if (head0) {
-      h += `<p class="mp-para"><strong>¿Qué es ${mpManualEsc(head0)}?</strong> Es el núcleo temático de apertura del <strong>Tema 1</strong>; introduce definiciones, criterios y el marco de referencia que el curso desarrolla en coherencia con la carta descriptiva y con <strong>${mpManualEsc(temaNom)}</strong>.</p>`;
-    }
-    if (b1) {
-      h += `<p class="mp-para"><strong>¿Por qué es diferente a un enfoque solo teórico?</strong> Porque el temario articula <strong>${mpManualEsc(head0 || b0 || 'los fundamentos')}</strong> con <strong>${mpManualEsc(head1 || b1)}</strong>, de modo que avances de la comprensión a la aplicación verificable en el aula.</p>`;
-    }
-  }
-  if (!h) {
+  if (defs.length) {
+    h += `<p class="mp-para">En este curso trabajarás los siguientes conceptos clave, alineados al temario y a la carta descriptiva de <strong>${mpManualEsc(temaNom)}</strong>:</p>`;
+    h += '<ul class="mp-ul-bullets">';
+    defs.slice(0, 12).forEach((d) => {
+      h += `<li><strong>${mpManualEsc(d)}:</strong> criterio o práctica que se desarrolla en las sesiones y se verifica en las evaluaciones del curso.</li>`;
+    });
+    h += '</ul>';
+  } else {
     h += `<p class="mp-para"><strong>¿Qué aporta este curso sobre ${mpManualEsc(temaNom)}?</strong> Sistematiza criterios, procedimientos y supuestos prácticos alineados al temario y a la carta descriptiva.</p>`;
-    h += `<p class="mp-para"><strong>¿Por qué no basta con la experiencia cotidiana?</strong> Porque el curso contrasta la práctica empírica con criterios normativos y técnicos verificables en evaluación formativa y sumativa.</p>`;
+    h += `<p class="mp-para"><strong>¿Por qué no basta con la experiencia cotidiana?</strong> Porque el curso contrasta la práctica empírica con criterios técnicos verificables en evaluación formativa y sumativa.</p>`;
   }
   return h;
 }
 
 function buildMpComponentesDelTema(data){
-  const isBreakBlock = (txt) => /\breceso\b|\bservicio\s+de\s+cafe\b|\bcaf[eé]\b/i.test(String(txt || '').toLowerCase());
+  const isBreakBlock = (txt) => isCoffeeOrBreakLabel(txt);
   const mods = Array.isArray(data.modulos) ? data.modulos.filter((m) => !isBreakBlock(m && m.titulo)) : [];
   if (!mods.length) return `<p class="mp-para">Los componentes del temario se detallan en la carta descriptiva y en el desarrollo por temas.</p>`;
   let h = '';
+  const seenTema = new Set();
   mods.forEach((m, i) => {
-    h += `<p class="mp-comp-tema-head">Tema ${i + 1}: ${mpManualEsc(String(m.titulo || '').trim())}</p><ul class="mp-ul-check">`;
+    const tit = sanitizeManualPlainChunk(String(m.titulo || '').trim());
+    if (!tit) return;
+    const tk = tit.toLowerCase();
+    if (seenTema.has(tk)) return;
+    seenTema.add(tk);
+    h += `<p class="mp-comp-tema-head">Tema ${i + 1}: ${mpManualEsc(tit)}</p><ul class="mp-ul-bullets">`;
+    const seenBlock = new Set();
     (m.secuencia_didactica || []).forEach((b) => {
-      const nb = String(b.nombre_bloque || '').trim();
+      const nb = sanitizeManualPlainChunk(String(b.nombre_bloque || '').trim());
       if (!nb || isBreakBlock(nb)) return;
+      const bk = nb.toLowerCase();
+      if (seenBlock.has(bk)) return;
+      seenBlock.add(bk);
       h += `<li>${mpManualEsc(nb)}</li>`;
     });
     h += `</ul>`;
@@ -2266,18 +2312,14 @@ function buildParticipantManualSectionBody(p, data){
   let core = '';
   let coreFromTemplate = false;
   if (k.includes('temario del curso')) {
+    const hasM = Array.isArray(data.modulos) && data.modulos.some((m) => !isCoffeeOrBreakLabel(m && m.titulo));
     const op = data.objetivos_particulares || {};
     const hasS = !!(op.cognitivo && op.psicomotor && op.afectivo);
-    const hasM = Array.isArray(data.modulos) && data.modulos.length;
-    core = (hasS || hasM) ? buildTemarioParticipantListaHtml(data) : ia;
-    coreFromTemplate = !!(hasS || hasM);
+    core = (hasM || hasS) ? buildTemarioParticipantListaHtml(data) : ia;
+    coreFromTemplate = !!(hasM || hasS);
     if (!core.trim()) core = ia;
-    // Temario: lista estructurada + texto IA si existe (antes solo aparecía IA con umbral alto)
-    let innerTemario = core;
-    if (iaLen > 60 && core !== ia && (hasS || hasM)) {
-      innerTemario = `${core}<div class="mp-ia-primary mp-temario-ia" style="margin-top:12px">${ia}</div>`;
-    }
-    return enrichParticipantManualBodyIfThin(innerTemario, p, data, { minChars: 700, preferSupplement: true });
+    // No anexar el temario de la IA: provoca duplicados y "Receso - SERVICIO DE CAFÉ"
+    return enrichParticipantManualBodyIfThin(core, p, data, { minChars: 200, preferSupplement: false });
   }
   if (k.includes('introduccion')) { core = buildMpIntroduccion(data); coreFromTemplate = true; }
   else if (k.includes('objetivos del curso')) { core = buildMpObjetivosDelCurso(data); coreFromTemplate = true; }
@@ -2300,9 +2342,13 @@ function buildParticipantManualSectionBody(p, data){
   // debe ser el contenido robusto de plantilla y la IA se usa como complemento.
   if (coreFromTemplate) {
     let inner = core;
-    // En "Componentes del temario" evitamos duplicar contenido corto de IA (incluye recesos/tiempos)
-    // y mantenemos solo la versión estructurada.
-    if (iaLen > 40 && ia !== core && !k.includes('componentes')) {
+    // Evitar duplicar: temario, componentes, qué aprenderás y conceptos clave ya vienen estructurados
+    const skipIaSupplement =
+      k.includes('componentes') ||
+      k.includes('temario') ||
+      k.includes('que aprenderas') ||
+      k.includes('conceptos clave');
+    if (iaLen > 40 && ia !== core && !skipIaSupplement) {
       inner += `<div class="mp-template-supplement" style="margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0"><p class="mp-h4-sec">Ampliación contextual</p><div class="mp-ia-primary">${ia}</div></div>`;
     }
     const minTemplateChars = k.includes('introduccion') ? 1300 : 900;
@@ -3326,6 +3372,15 @@ function appendEvaluacionesWordContent(children, root, dx){
 /** Word: inserta espacios faltantes entre números/letras/puntuación pegados (ej. 10personas, Duración:2hrs). */
 function ensureReadableSpaces(text) {
   let s = String(text || '').replace(/\u00a0/g, ' ');
+  // curso«Tema» / »siguiente
+  s = s.replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])([«"“])/g, '$1 $2');
+  s = s.replace(/([»"”])([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])/g, '$1 $2');
+  // Quitar prefijo erróneo "A " / "A. " de listas (¿Qué aprenderás?)
+  s = s.replace(/(^|\n)\s*A[\.\)]\s+/g, '$1');
+  s = s.replace(/(^|\n)\s*A\s+(?=[a-záéíóúüñ])/g, '$1');
+  // Doble viñeta • •
+  s = s.replace(/[•●]\s*[•●]/g, '•');
+  s = s.replace(/(^|\n)\s*[•●]\s*/g, '$1• ');
   // b)Formativa  a)Diagnóstica
   s = s.replace(/([a-z])\)([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])/g, '$1) $2');
   // :2hrs  :listas  :Adultos  :80%
@@ -3342,6 +3397,24 @@ function ensureReadableSpaces(text) {
     .map((line) => line.replace(/[ \t\f\v]+/g, ' ').trim())
     .join('\n');
   return s;
+}
+
+/** Limpia viñetas dobles, prefijo "A " y espacios alrededor de comillas angulares en HTML/texto del manual. */
+function sanitizeManualPlainChunk(text) {
+  let s = String(text || '');
+  s = s.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  s = s.replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])([«"“])/g, '$1 $2');
+  s = s.replace(/([»"”])([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])/g, '$1 $2');
+  s = s.replace(/^\s*A[\.\)]\s+/i, '');
+  s = s.replace(/^\s*A\s+(?=[a-záéíóúüñ])/i, '');
+  s = s.replace(/^[•●\-\u2013\u2014]+\s*/g, '');
+  s = s.replace(/[•●]\s*[•●]/g, '•');
+  s = s.replace(/\s{2,}/g, ' ').trim();
+  return s;
+}
+
+function isCoffeeOrBreakLabel(txt) {
+  return /\breceso\b|\bservicio\s+de\s+caf[eé]\b|\bcaf[eé]\b|\bpausa\s+programada\b/i.test(String(txt || ''));
 }
 
 /**
@@ -4800,7 +4873,7 @@ const dialogMinutes = 5;
                const minExp = 17;
                const minDem = 16;
                const minDia = 17;
-               const incluirReceso = true;
+               const incluirReceso = false; // No listar café/receso como tema de aprendizaje
                const incluirEvaluacion = true;
                const recesoMin = 3;
                const evaluacionMin = 7;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getOpenAIClient } from '@/lib/ai/openai-client'
-import { getCourseById, getModules, upsertCourseFormat } from '@/lib/db/queries'
+import { getCourseById, getModules, getKnowledgeItems, upsertCourseFormat } from '@/lib/db/queries'
 
 function normalizeKey(value: string): string {
   return value
@@ -86,6 +86,76 @@ function enforceEvaluationQuestionLimits(payload: unknown): unknown {
   return data
 }
 
+function mergeKnowledgeIntoFuentes(
+  payload: unknown,
+  knowledge: Awaited<ReturnType<typeof getKnowledgeItems>>
+): unknown {
+  if (!payload || typeof payload !== 'object') return payload
+  const data = payload as Record<string, unknown>
+  const existing = Array.isArray(data.fuentes_informacion)
+    ? (data.fuentes_informacion as Array<Record<string, unknown>>)
+    : []
+
+  const isMarketplace = (url: unknown) =>
+    /amazon\.|mercadolibre\.|ebay\.|walmart\.|coppel\./i.test(String(url || ''))
+
+  const fromKnowledge = knowledge
+    .filter((k) => k.name || k.url)
+    .slice(0, 8)
+    .map((k) => {
+      const meta = (k.metadata || {}) as Record<string, unknown>
+      return {
+        titulo_obra: k.name || 'Referencia del curso',
+        autor_institucion:
+          (typeof meta.author === 'string' && meta.author) ||
+          (typeof meta.autor === 'string' && meta.autor) ||
+          'Base de conocimiento del curso',
+        url_o_referencia: k.url || (typeof meta.url === 'string' ? meta.url : 'Ver archivo en base de conocimiento'),
+        ano_publicacion:
+          meta.year != null
+            ? String(meta.year)
+            : meta.ano != null
+              ? String(meta.ano)
+              : 'No especificado',
+        ultima_reforma_consultada:
+          typeof meta.reforma === 'string' ? meta.reforma : 'No aplica',
+        editorial:
+          (typeof meta.editorial === 'string' && meta.editorial) ||
+          'Base de conocimiento iCurs@',
+        pais_origen: (typeof meta.pais === 'string' && meta.pais) || 'México',
+      }
+    })
+
+  if (fromKnowledge.length > 0) {
+    // Preferir base de conocimiento; conservar de la IA solo no-marketplace que aporten URL distinta
+    const knownUrls = new Set(
+      fromKnowledge.map((f) => String(f.url_o_referencia || '').toLowerCase()).filter(Boolean)
+    )
+    const extras = existing.filter((f) => {
+      const url = String(f.url_o_referencia || '')
+      if (isMarketplace(url)) return false
+      if (knownUrls.has(url.toLowerCase())) return false
+      return /gob\.mx|dof\.gob|conocer\.gob|stps\.gob|imss\.gob|sat\.gob|edu|org\//i.test(url)
+    })
+    data.fuentes_informacion = [...fromKnowledge, ...extras].slice(0, 6)
+  } else {
+    data.fuentes_informacion = existing
+      .filter((f) => !isMarketplace(f.url_o_referencia))
+      .slice(0, 5)
+    if ((data.fuentes_informacion as unknown[]).length === 0 && existing.length) {
+      // Si solo había Amazon, dejar al menos una nota no comercial truncando URL de tienda
+      data.fuentes_informacion = existing.slice(0, 3).map((f) => ({
+        ...f,
+        url_o_referencia: isMarketplace(f.url_o_referencia)
+          ? 'Consultar bibliografía en la base de conocimiento del curso'
+          : f.url_o_referencia,
+      }))
+    }
+  }
+
+  return data
+}
+
 export async function POST(request: NextRequest) {
   let openai
   try {
@@ -104,6 +174,36 @@ export async function POST(request: NextRequest) {
   if (!curso) return NextResponse.json({ error: 'Course not found' }, { status: 404 })
 
   const modulos = await getModules(courseId)
+  let knowledgeItems: Awaited<ReturnType<typeof getKnowledgeItems>> = []
+  try {
+    knowledgeItems = await getKnowledgeItems(courseId)
+  } catch {
+    knowledgeItems = []
+  }
+  const knowledgeSourcesPrompt =
+    knowledgeItems.length > 0
+      ? `
+FUENTES DE LA BASE DE CONOCIMIENTO DEL CURSO (OBLIGATORIO usarlas en fuentes_informacion):
+${knowledgeItems
+  .slice(0, 12)
+  .map((k, i) => {
+    const meta = (k.metadata || {}) as Record<string, unknown>
+    const author = typeof meta.author === 'string' ? meta.author : ''
+    const year = meta.year != null ? String(meta.year) : ''
+    return `- [${i + 1}] título/nombre: "${k.name}"${author ? `; autor/institución: ${author}` : ''}${year ? `; año: ${year}` : ''}${k.url ? `; URL: ${k.url}` : ''}; tipo: ${k.type}`
+  })
+  .join('\n')}
+
+REGLAS DE FUENTES:
+- Prioriza EXCLUSIVAMENTE estas referencias de la base de conocimiento del curso.
+- En url_o_referencia usa las URLs reales de la lista (no inventes amazon.com ni enlaces genéricos de tiendas).
+- Si faltan datos (editorial, país), completa solo lo razonable; no sustituyas la URL por Amazon.
+- Puedes añadir como máximo 1 fuente oficial adicional (gob.mx, DOF, CONOCER) si aporta valor normativo.
+`
+      : `
+FUENTES: No hay ítems en la base de conocimiento de este curso. Usa referencias oficiales (gob.mx, DOF, CONOCER, normas STPS) o bibliografía técnica verificable.
+PROHIBIDO usar amazon.com, marketplaces o URLs de compra como fuente principal.
+`
   let modulesPrompt = "Genera de 5 a 10 módulos coherentes y lógicos para el diplomado/curso."
   const courseContext = `${curso.name} ${curso.norm_reference ?? ''}`.toUpperCase()
   const isNom029Course = courseContext.includes('NOM-029')
@@ -261,7 +361,7 @@ INSTRUCCIONES ESTRUCTURALES:
    - metadatos_tiempos.comprobacion_previa_minutos es siempre 30 y es EXCLUYENTE del total oficial del curso.
    - Cada módulo debe incluir secuencia_didactica: lista ORDENADA de bloques; cada bloque con tecnica_instruccional explícita.
    - Evalúa según la naturaleza del tema qué técnicas grupales/instruccionales aplicar (Expositiva, Demostrativa, Diálogo-Discusión, Energizante). NO es obligatorio usar todas en cada tema. Usa la técnica demostrativa / práctica y el diálogo-discusión SOLO si aplican a los objetivos y naturaleza del tema desarrollado.
-   - OBLIGATORIO - SERVICIO DE CAFÉ: Debes incluir un bloque o actividad especial llamado "Receso - SERVICIO DE CAFÉ" o "Receso" con una duracion_minutos de 3 minutos, ubicado estratégicamente (por ejemplo, entre el tema 2 y el tema 3). Este tiempo debe ajustarse dentro del total de duración del desarrollo.
+   - OBLIGATORIO - SERVICIO DE CAFÉ (solo tiempos de carta descriptiva): Incluye un bloque de pausa llamado "Receso - SERVICIO DE CAFÉ" con duracion_minutos de 3 minutos entre temas para el control de tiempos del desarrollo. Este bloque NO es un tema de aprendizaje: no lo listes en el Temario del Manual del Participante, ni en COMPONENTES DEL TEMARIO, ni como aprendizaje esperado.
    - OBLIGATORIO - MATERIAL DE APOYO: En todos los bloques de la secuencia_didáctica, el valor para "materiales_apoyo" debe ser estrictamente "Presentación PowerPoint, Laptop, Pantalla / TV", a menos que una técnica requiera obligatoriamente un formato o herramienta física extra (ej. para evaluación o práctica).
    - OBLIGATORIO - ACTIVIDADES: El texto de "actividades" debe ser EXTREMADAMENTE DETALLADO y estar ESTRICTAMENTE ACOMODADO y ENLISTADO usando saltos de línea explícitos (\n). Guíate ESTRICTAMENTE por este formato de ejemplo, preservando el orden y los saltos de línea para que la tabla sea legible:
      1. Aplicar técnica expositiva (o la que corresponda):
@@ -284,17 +384,17 @@ INSTRUCCIONES ESTRUCTURALES:
 6. Manual del Participante: Redacta un manual estructurado EXACTAMENTE con los siguientes 12 títulos de sección (cada uno en el campo "titulo" y su desarrollo en "contenido"):
    - "Introducción" (Párrafos de bienvenida al curso, explicando qué es el tema, por qué es importante conocerlo, y cómo el curso servirá como herramienta clave. Usa el tema "${curso.name}").
    - "Objetivos del Curso" (Incluye un Objetivo General y Objetivos Específicos/Particulares, redactados formalmente y dirigidos a "El Participante").
-   - "Temario del Curso" (Lista numerada de grandes bloques; bajo cada número, viñetas con ● y subniveles con "o" minúscula cuando aplique; debe reflejar exactamente el orden y los títulos de cada tema del desarrollo —los mismos que modulos[].titulo en el JSON, presentados en el manual como Temas 1, 2…— y los nombre_bloque de secuencia_didactica, sin contradecir evaluacion_formativa ni evaluacion_sumativa). En el manual del participante NO uses la palabra "módulo"; usa "tema" o "temario".
-   - "¿Qué Aprenderás en Este Curso?" (Lista de viñetas con los aprendizajes esperados y habilidades que se adquirirán).
+   - "Temario del Curso" (Lista numerada de Temas 1, 2, 3… con viñetas ● y subtemas con "o"; debe reflejar exactamente modulos[].titulo y nombre_bloque de secuencia_didactica. PROHIBIDO incluir "Receso", "SERVICIO DE CAFÉ" o pausas. PROHIBIDO duplicar el mismo subtema. NO uses la palabra "módulo").
+   - "¿Qué Aprenderás en Este Curso?" (Lista HTML <ul><li>…</li></ul> de aprendizajes. Cada ítem inicia con un verbo en futuro o infinitivo observable. PROHIBIDO prefijar con la letra "A", "A.", "A)" ni numeración suelta. Ejemplo correcto: "<ul><li>Explicará los principios del servicio al cliente.</li><li>Aplicará técnicas de escucha activa.</li></ul>").
    - "Metodología" (Cómo se abordará la teoría y la práctica en el curso, combinando ejercicios, discusión, etc.).
    - "Importancia de Conocer [Tema del curso]" (Relevancia técnica, legal o laboral del tema abordado).
    - "Beneficios de conocer [Tema del curso]" (Beneficios directos, control sobre derechos o mejoras profesionales para el participante).
-   - "Conceptos Clave que Aprenderás" (Definiciones fundamentales, glosario o preguntas frecuentes como "¿Qué es...?" o "¿Por qué es diferente a...?").
-   - "COMPONENTES DEL TEMARIO" o equivalente (desglose por tema: "Tema 1:", "Tema 2:", … con viñetas y el detalle de bloques; sin usar la palabra "módulo" en el manual del participante).
+   - "Conceptos Clave que Aprenderás" (Glosario en viñetas <ul><li><strong>Término:</strong> definición breve</li></ul>. PROHIBIDO repetir la lista de "¿Qué Aprenderás?" ni prefijos "A ").
+   - "COMPONENTES DEL TEMARIO" o equivalente (desglose por tema: "Tema 1:", "Tema 2:", … con viñetas; sin recesos/café; sin duplicar subtemas; sin la palabra "módulo").
    - "Ejercicio Práctico: [Aplicación/Cálculo del Tema]" (Instrucciones detalladas paso a paso para una práctica, simulación o cálculo, con componentes o fórmulas).
    - "Aplicación de [Tema del curso] en la Vida Laboral" (Casos de uso reales, impacto en el día a día, trámites o toma de decisiones).
    - "Conclusión" (Cierre y reflexión sobre cómo las herramientas brindadas protegerán, mejorarán o impactarán el futuro del participante).
-   Asegúrate de que el contenido de cada sección sea MUY EXTENSO (como un manual impreso de participante: varias páginas en conjunto), literal y coherente con la carta descriptiva y el tema "${curso.name}". Cada sección (salvo el temario, que sigue el formato de lista 1./●/o) debe incluir introducción al bloque, desarrollo en varios párrafos, listados donde tenga sentido y un cierre breve. IMPORTANTE: Para "contenido", usa etiquetas HTML (<p>, <ul>, <li>, <strong>, <br>) cuando ayuden a la maquetación; también puedes usar muchas entradas de texto plano en el array si cada una es un párrafo largo. No uses listas vacías ni secciones de menos de 400 caracteres en total por sección. Reemplaza "[Tema del curso]" con el tema real del diplomado.
+   Asegúrate de que el contenido de cada sección sea MUY EXTENSO (como un manual impreso de participante: varias páginas en conjunto), literal y coherente con la carta descriptiva y el tema "${curso.name}". Cada sección (salvo el temario, que sigue el formato de lista 1./●/o) debe incluir introducción al bloque, desarrollo en varios párrafos, listados donde tenga sentido y un cierre breve. IMPORTANTE: Para "contenido", usa etiquetas HTML (<p>, <ul>, <li>, <strong>, <br>) cuando ayuden a la maquetación; también puedes usar muchas entradas de texto plano en el array si cada una es un párrafo largo. No uses listas vacías ni secciones de menos de 400 caracteres en total por sección. Reemplaza "[Tema del curso]" con el tema real del diplomado. Deja siempre un espacio antes de comillas angulares: escriba "curso «Título»", nunca "curso«Título»".
 7. Manual del Instructor: Para cada parte o módulo del curso, define exactamente: "titulo" (ej. "Parte 1"), "temas" (array de viñetas), "sugerencias" (array de viñetas con apoyo detallado), "tecnicas" (array de viñetas con la técnica a usar), "evaluacion" (array de viñetas con forma y tiempo), y "preguntas_refuerzo" (array de preguntas dirigidas).
 8. Evaluaciones Diagnóstica, Formativa y Sumativa (OBLIGATORIO):
    - Diagnóstica: EXACTAMENTE 5 preguntas de opción múltiple (a, b, c, d), claras y directas.
@@ -305,8 +405,10 @@ INSTRUCCIONES ESTRUCTURALES:
    - Formativa (guía de observación): por cada módulo, redacta criterios observables, verificables y conductuales (acciones concretas que el instructor pueda ver en una práctica o ejercicio), no criterios vagos como "entiende el tema".
    - En criterios formativos usa verbos observables: identifica, calcula, clasifica, aplica, documenta, argumenta, verifica, corrige, etc.
    - PROHIBIDO como núcleo del criterio formativo: "describe los beneficios de cumplir…", "evalúa la efectividad de las medidas" sin pasos observables, "manifiesta actitud…", "participa en discusiones…", "propone mejoras al entorno laboral" sin evidencia normativa o de checklist. Sustituye siempre por verificaciones alineadas al temario (procedimiento, riesgo, medida de la norma, EPP, orden de trabajo, evidencia escrita).
-9. Fuentes de Información: Proporciona de 3 a 5 fuentes de información (libros, artículos, manuales o referencias oficiales gubernamentales/normativas) detalladas y consistentes con la temática. Cada fuente debe incluir siempre todos los campos del objeto: titulo_obra, autor_institucion, url_o_referencia, ano_publicacion (año como texto, ej. "2024"), ultima_reforma_consultada (año o "No aplica"), editorial (institución o editorial; si es norma en línea puede repetirse la institución), pais_origen (ej. "México").
-10. Recursos de Continuidad: Sugiere de 3 a 5 recursos adicionales dinámicos (sitios web oficiales, manuales externos, dependencias de gobierno o certificaciones) relevantes a la temática del curso para el cierre.
+9. Fuentes de Información:
+${knowledgeSourcesPrompt}
+   Cada fuente debe incluir siempre todos los campos del objeto: titulo_obra, autor_institucion, url_o_referencia, ano_publicacion (año como texto, ej. "2024"), ultima_reforma_consultada (año o "No aplica"), editorial (institución o editorial; si es norma en línea puede repetirse la institución), pais_origen (ej. "México").
+10. Recursos de Continuidad: Sugiere de 3 a 5 recursos adicionales dinámicos (sitios web oficiales, manuales externos, dependencias de gobierno o certificaciones) relevantes a la temática del curso para el cierre. Preferir URLs de la base de conocimiento si existen.
 Genera una respuesta en formato JSON de forma estricta.
 `
 
@@ -564,7 +666,10 @@ Genera una respuesta en formato JSON de forma estricta.
     
     let generatedData;
     try {
-        generatedData = enforceEvaluationQuestionLimits(sanitizeGeneratedData(JSON.parse(generatedText)))
+        generatedData = mergeKnowledgeIntoFuentes(
+          enforceEvaluationQuestionLimits(sanitizeGeneratedData(JSON.parse(generatedText))),
+          knowledgeItems
+        )
     }catch(e){
         throw new Error("Invalid formulation of JSON")
     }

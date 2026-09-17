@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCourseFormat } from '@/lib/db/queries'
+import { getCourseById, getCourseFormat, getKnowledgeItems } from '@/lib/db/queries'
+import { mergeKnowledgeIntoFuentes } from '@/lib/formats/merge-knowledge-fuentes'
+import { finalizeFormatPayload } from '@/lib/formats/finalize-format-payload'
+import { enforceEvaluationQuestionLimits } from '@/lib/formats/enforce-evaluation-limits'
 
 function normalizeKey(value: string): string {
   return value
@@ -67,16 +70,6 @@ function sanitizeGeneratedData(node: unknown): unknown {
   return node
 }
 
-function enforceEvaluationQuestionLimits(payload: unknown): unknown {
-  if (!payload || typeof payload !== 'object') return payload
-  const data = payload as Record<string, unknown>
-  const diagnostica = Array.isArray(data.evaluacion_diagnostica) ? data.evaluacion_diagnostica : []
-  const sumativa = Array.isArray(data.evaluacion_sumativa) ? data.evaluacion_sumativa : []
-  data.evaluacion_diagnostica = diagnostica.slice(0, 5)
-  data.evaluacion_sumativa = sumativa.slice(0, 10)
-  return data
-}
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const courseId = searchParams.get('courseId')
@@ -87,14 +80,28 @@ export async function GET(request: NextRequest) {
 
   try {
     const format = await getCourseFormat(courseId)
-    
+
     if (!format || !format.objectives?.ai_payload) {
-        return NextResponse.json({ error: 'Not generated yet' }, { status: 404 })
+      return NextResponse.json({ error: 'Not generated yet' }, { status: 404 })
     }
 
     const cleaned = sanitizeGeneratedData(format.objectives.ai_payload)
-    return NextResponse.json({ success: true, data: enforceEvaluationQuestionLimits(cleaned) })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    let knowledgeItems: Awaited<ReturnType<typeof getKnowledgeItems>> = []
+    try {
+      knowledgeItems = await getKnowledgeItems(courseId)
+    } catch {
+      knowledgeItems = []
+    }
+    const curso = await getCourseById(courseId).catch(() => null)
+    // Reaplicar limpiezas + KB al cargar (corrige generaciones viejas con Amazon/A/café)
+    const withKnowledge = mergeKnowledgeIntoFuentes(
+      finalizeFormatPayload(enforceEvaluationQuestionLimits(cleaned)),
+      knowledgeItems,
+      { name: curso?.name, norm_reference: curso?.norm_reference }
+    )
+    return NextResponse.json({ success: true, data: withKnowledge })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al cargar formatos'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

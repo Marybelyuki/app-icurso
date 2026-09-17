@@ -1,16 +1,13 @@
-import Sidebar from '@/components/layout/Sidebar'
-
 export default function FormatosLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Sin Sidebar: el generador ya trae su panel de configuración (300px)
+  // y necesita el ancho completo para la carta carta tamaño carta.
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
+    <div className="h-screen w-full overflow-hidden" style={{ background: 'var(--bg)' }}>
+      {children}
     </div>
   )
 }

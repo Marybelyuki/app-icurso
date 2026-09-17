@@ -100,7 +100,20 @@ textarea{resize:vertical;min-height:50px}
 
 /* DOC */
 
-.doc{background:#fff;padding:.6in .65in;border-radius:7px;box-shadow:0 2px 10px rgba(0,0,0,.1);font-family:Arial,sans-serif;font-size:10pt;line-height:1.45;width:8.5in;min-height:11in;max-width:8.5in;margin:0 auto;color:#000}
+.doc{background:#fff;padding:0.25in 0.44in 0.34in 0.50in;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,.1);font-family:Arial,sans-serif;font-size:10pt;line-height:1.35;width:8.5in;min-height:11in;max-width:8.5in;margin:0 auto;color:#000;box-sizing:border-box}
+
+/* Carta: tablas legibles; NO table-layout:fixed (rompe filas con colspan) */
+#doc-carta .dc{margin-bottom:10px}
+#doc-carta .dt1{font-size:14pt;font-weight:700;text-align:center}
+#doc-carta .dt2{font-size:12pt;font-weight:700;text-align:center;margin-top:4px}
+#doc-carta table.t{margin:7px 0;font-size:9pt;width:100%;table-layout:auto;border-collapse:collapse}
+#doc-carta table.t td,#doc-carta table.t th{padding:5px 7px;border:1px solid #000;vertical-align:top;word-break:normal;overflow-wrap:anywhere;white-space:normal}
+#doc-carta table.t .sh{background:#D9D9D9;font-weight:700;text-align:center;font-size:9.5pt}
+#doc-carta table.t .subh{background:#EFEFEF;font-weight:700;text-align:center;font-size:8.5pt}
+#doc-carta table.t-inner{width:100%;margin:0;border-collapse:collapse;table-layout:fixed}
+#doc-carta table.t-inner td{word-break:normal;overflow-wrap:break-word}
+#doc-carta table.t > tbody > tr > td:has(> table.t-inner),
+#doc-carta table.t > tr > td:has(> table.t-inner){padding:0}
 
 /* Manuales: carta US Letter (8.5" × 11"), sin altura tipo legal; el scroll principal es el del panel .pp */
 .doc.doc-manual{font-family:'Times New Roman',Times,serif;font-size:10pt;line-height:1.5;min-height:0;box-sizing:border-box;width:auto;max-width:100%;margin:0 auto;padding:8px 0 24px;background:transparent;box-shadow:none;overflow:visible;scroll-snap-type:none}
@@ -127,6 +140,17 @@ textarea{resize:vertical;min-height:50px}
 .doc.doc-manual .manual-sheet-break{page-break-before:always;break-before:page;border-top:2px dashed #cbd5e1;margin:18px -0.65in 0;padding:18px 0 0}
 
 .doc.doc-manual .letter-page .manual-sheet-break{border-top:none;margin-top:0;padding-top:0;page-break-before:auto;break-before:auto}
+
+/* Cuerpo del Manual del Participante: temas seguidos en la misma hoja */
+.doc.doc-manual .mp-section-flow{
+  page-break-before:auto;break-before:auto;
+  border-top:none;margin:10px 0 0;padding:8px 0 0;
+}
+.doc.doc-manual .mp-section-flow + .mp-section-flow{
+  border-top:1px solid #e8eef5;
+  margin-top:12px;padding-top:10px;
+}
+.doc.doc-manual .letter-page .mp-section-flow{margin-left:0;margin-right:0}
 
 @media screen{
   .doc.doc-manual .manual-sheet-break{margin-left:0;margin-right:0}
@@ -167,6 +191,9 @@ ul.dl{margin:6px 0 6px 20px;list-style-type:disc;padding-left:1.35em}
 
 ul.dl li{margin-bottom:4px;word-break:break-word;overflow-wrap:break-word;display:list-item;list-style-type:disc}
 
+/* Evita que el número quede pegado al texto si se pierde el nbsp del DOM */
+span.s-part{margin-right:.2em}
+
 /* En celdas table.t, border-collapse suele ocultar viñetas nativas: usar marcador explícito */
 table.t td ul.dl-in-table,table.t th ul.dl-in-table{list-style:none!important;padding-left:0!important;margin:4px 0!important}
 
@@ -201,7 +228,82 @@ table.t td ul.dl-in-table>li::before,table.t th ul.dl-in-table>li::before{conten
 
 .mp-modulo-body{font-size:9.5pt;line-height:1.55;text-align:justify;margin-top:6px}
 
-.mp-index-item{display:flex;justify-content:space-between;border-bottom:1px dotted #7f7f7f;padding:4px 0;font-size:9pt}
+/* Índice estilo Word: Título ........ 3 */
+#ai-mi-index,
+#ai-mp-index{
+  padding-right:8px;
+  max-width:100%;
+  box-sizing:border-box;
+}
+
+.mp-index-item{
+  display:grid;
+  grid-template-columns:auto minmax(48px,1fr) 2.4em;
+  align-items:baseline;
+  column-gap:6px;
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+  padding:5px 0;
+  margin:0;
+  border:none;
+  font-size:12pt;
+  font-family:'Times New Roman',Times,Georgia,serif;
+  color:#000;
+  line-height:1.35;
+}
+
+.mp-index-item .toc-label{
+  white-space:nowrap;
+  font-family:inherit;
+  font-size:inherit;
+}
+
+.mp-index-item .toc-dots,
+.mp-index-item .toc-leader{
+  display:block;
+  width:100%;
+  min-height:1em;
+  overflow:hidden;
+  border:none;
+  border-bottom:1.5px dotted #333;
+  margin:0 0 0.28em;
+  padding:0;
+  background:transparent;
+}
+.mp-index-item .toc-leader::after,
+.mp-index-item .toc-dots::after{
+  content:none;
+}
+
+.mp-index-item .toc-pg{
+  justify-self:end;
+  white-space:nowrap;
+  width:2.4em;
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+  font-family:inherit;
+  font-size:inherit;
+  font-weight:700;
+  color:#000;
+  background:#fff;
+  position:relative;
+  z-index:2;
+}
+
+/* Título ÍNDICE estilo Word/EC0217 */
+.doc.doc-manual #doc-inst .mp-section:has(#ai-mi-index) > h3,
+.doc.doc-manual #doc-part .mp-section:has(#ai-mp-index) > h3{
+  font-family:'Times New Roman',Times,Georgia,serif;
+  font-size:14pt;
+  font-weight:700;
+  color:#1e3c72;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  border-bottom:2.5px solid #1e3c72;
+  padding-bottom:6px;
+  margin-bottom:14px;
+}
 
 .mp-formula{background:#1e3c72;color:#fff;padding:10px 14px;border-radius:5px;font-family:monospace;font-size:10pt;margin:10px 0;text-align:center}
 
@@ -243,7 +345,7 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
 .mp-ul-bullets li{position:relative;padding-left:1.2em;margin:0.38em 0;font-size:9.5pt;line-height:1.55}
 
-.mp-ul-bullets li::before{content:'•';position:absolute;left:0;font-weight:700}
+.mp-ul-bullets li::before{content:'*';position:absolute;left:0;font-weight:700}
 
 .mp-ul-check li{position:relative;padding-left:1.35em;margin:0.38em 0;font-size:9.5pt;line-height:1.55}
 
@@ -269,19 +371,37 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
 /* MANUAL INSTRUCTOR */
 
-.mi-cover{background:#fff;color:#000;padding:50px 30px 46px;border:2px solid #1e3c72;border-radius:7px;margin:-20px -24px 20px;min-height:220px;position:relative;overflow:hidden;text-align:center}
+.mi-cover{background:#fff;color:#000;padding:56px 28px 48px;border:2px solid #1e3c72;border-radius:0;margin:-20px -24px 20px;min-height:240px;position:relative;overflow:hidden;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:10px}
+
+.mi-cover .mi-cover-course{font-size:16pt;font-weight:700;color:#1e3c72;text-transform:uppercase;letter-spacing:.4px;line-height:1.25}
+
+.mi-cover .mi-cover-doc{font-size:13pt;font-weight:700;color:#000;margin-top:6px}
+
+.mi-cover .mp-author{margin-top:28px}
 
 .mi-box{background:#f0f5ff;border:1px solid #c8d8f0;border-radius:5px;padding:10px 12px;margin:8px 0;font-size:9pt}
 
-.mi-parte{border:none;border-radius:0;margin:12px 0;overflow:visible;padding:2px 0}
+.mi-parte{border:none;border-radius:0;margin:14px 0 22px;overflow:visible;padding:2px 0}
 
-.mi-parte-title{background:transparent;color:#1e3c72;padding:0 0 6px;font-weight:700;font-size:10.5pt;border-bottom:1px solid #cbd5e1}
+.mi-parte.mp-section{margin:16px 0}
+
+.mi-parte-title{background:transparent;color:#1e3c72;padding:0 0 6px;font-weight:700;font-size:11pt;border-bottom:1.5px solid #1e3c72;text-transform:none}
+
+.mp-section.mi-parte > h3{text-transform:none;letter-spacing:0}
+
+.mi-parte-h{font-weight:700;margin:12px 0 4px;font-size:9.5pt;color:#111}
+
+.mi-parte-subh{font-weight:700;margin:6px 0 2px;font-size:9pt}
 
 .mi-parte-body{padding:10px 12px;font-size:9pt}
 
 .mi-parte-body ul{padding-left:18px}
 
 .mi-parte-body li{margin-bottom:4px}
+
+.mi-parte .dl{margin:4px 0 6px 18px}
+
+.mi-parte .dl li{margin-bottom:3px}
 
 .mi-anexo-inj{font-size:9pt;margin:6px 0 12px;padding:8px;border:1px solid #c8d8f0;border-radius:4px;background:#fafcff}
 
@@ -357,6 +477,18 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
 .toast.warning{background:#e67e22}
 
+/* SCROLL TO TOP — fijo al viewport del iframe (fuera de .pp) */
+.btn-scroll-top{
+  position:fixed;right:18px;bottom:18px;width:48px;height:48px;border:none;border-radius:50%;
+  background:#1e3c72;color:#fff;font-size:22px;line-height:1;cursor:pointer;z-index:10060;
+  opacity:0;visibility:hidden;pointer-events:none;transform:translateY(10px);
+  transition:opacity .2s,transform .2s,visibility .2s,background .2s;
+  box-shadow:0 6px 18px rgba(30,60,114,.4);display:flex;align-items:center;justify-content:center;
+}
+.btn-scroll-top.show{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0)}
+.btn-scroll-top:hover{background:#152a52}
+.btn-scroll-top:focus-visible{outline:2px solid #ffd700;outline-offset:2px}
+
 /* LOADING */
 
 .loading{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9998;justify-content:center;align-items:center;flex-direction:column;color:#fff}
@@ -376,7 +508,7 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
     margin: .5in;
   }
 
-  .fp,.dtabs,.btn,.btn-group,.etabs,.header{display:none!important}
+  .fp,.dtabs,.btn,.btn-group,.etabs,.header,.btn-scroll-top{display:none!important}
 
   .layout{display:block!important;height:auto!important}
 
@@ -386,7 +518,7 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
   .dv.print-target{display:block!important}
 
-  .doc{box-shadow:none!important;border-radius:0!important;width:8.5in!important;min-height:0!important;max-width:8.5in!important;padding:.5in!important;margin:0 auto!important}
+  .doc{box-shadow:none!important;border-radius:0!important;width:8.5in!important;min-height:0!important;max-width:8.5in!important;padding:0.25in 0.44in 0.34in 0.50in!important;margin:0 auto!important}
 
   .doc.doc-manual{width:auto!important;max-width:100%!important;padding:0!important;margin:0 auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;scroll-snap-type:none!important}
 
@@ -444,7 +576,7 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
       <div class="g2">
 
-        <div class="fg"><label>Duración (hrs)</label><input type="number" id="f-dur" value="2"></div>
+        <div class="fg"><label>Duración (horas)</label><input type="number" id="f-dur" value="2"></div>
 
         <div class="fg"><label>Participantes</label><input type="number" id="f-part" value="20"></div>
 
@@ -606,307 +738,207 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
     <div class="doc" id="doc-carta">
 
-      <div class="dc"><div class="dt1">CARTA DESCRIPTIVA</div><div class="dt2"><span class="s-curso">Curso Estándar de Formación</span></div></div>
+      <div class="dc">
+        <div class="dt1">CARTA DESCRIPTIVA</div>
+        <div class="dt2"><span class="s-curso">-</span></div>
+      </div>
 
       <table class="t">
-
         <tr><td colspan="4" class="sh">INFORMACIÓN GENERAL</td></tr>
-
         <tr><td colspan="4"><strong>Nombre del Curso:</strong> <span class="s-curso">-</span></td></tr>
-
         <tr><td colspan="4"><strong>Organismo / Empresa:</strong> <span class="s-org">-</span></td></tr>
-
         <tr><td colspan="4"><strong>Nombre del Diseñador:</strong> <span class="s-dis">-</span></td></tr>
-
         <tr><td colspan="4"><strong>Nombre del Facilitador / Instructor:</strong> <span class="s-inst">-</span></td></tr>
-
         <tr>
-
-          <td style="width:25%"><strong>Lugar de Instrucción:</strong><br><span class="s-lugar">-</span></td>
-
-          <td style="width:23%"><strong>Duración:</strong>&nbsp;<span class="s-dur">200</span>&nbsp;hrs<br><strong>Inicio:</strong>&nbsp;<span class="s-fecha">18/04/2026</span></td>
-
-          <td style="width:32%"><strong>Perfil del participante</strong><br><strong>Psicográficas:</strong>&nbsp;<span class="s-perfil-psi"></span><br><strong>Conocimientos:</strong>&nbsp;<span class="s-perfil-con"></span><br><strong>Habilidades:</strong>&nbsp;<span class="s-perfil-hab"></span></td>
-
-          <td style="width:20%"><strong>Número de participantes:</strong><br><span class="s-part">20</span>&nbsp;personas</td>
-
+          <td style="width:22%"><strong>Lugar de Instrucción:</strong><br><span class="s-lugar">-</span></td>
+          <td style="width:20%"><strong>Duración:</strong> <span class="s-dur">-</span> horas<br><strong>Inicio:</strong> <span class="s-fecha">-</span></td>
+          <td style="width:38%"><strong>Perfil del participante</strong><br><strong>Psicográficas:</strong> <span class="s-perfil-psi"></span><br><strong>Conocimientos:</strong> <span class="s-perfil-con"></span><br><strong>Habilidades:</strong> <span class="s-perfil-hab"></span></td>
+          <td style="width:20%"><strong>Número de participantes:</strong><br><span class="s-part">20</span> personas</td>
         </tr>
-
       </table>
 
       <table class="t">
-
         <tr><td colspan="3" class="sh">OBJETIVO GENERAL</td></tr>
-
         <tr><td colspan="3" style="font-size:8pt;font-style:italic">(Describe la demostración de un conocimiento, desempeño o producto, resultado del aprendizaje del participante, así como el dominio de aprendizaje cognitivo, psicomotor y/o afectivo en los que impactará el curso - criterio EC0301.)</td></tr>
-
         <tr>
-
-          <td class="subh" style="width:14%">Sujeto</td><td class="subh" style="width:43%">Acción o comportamiento:</td><td class="subh">Condición de operación:</td></tr><tr><td><span class="s-og-sujeto">El participante</span></td><td><span class="s-og-accion">-</span></td><td><span class="s-og-condicion">-</span></td>
-
+          <td class="subh" style="width:16%">Sujeto</td>
+          <td class="subh" style="width:42%">Acción o comportamiento</td>
+          <td class="subh" style="width:42%">Condición de operación</td>
         </tr>
-
+        <tr>
+          <td style="width:16%"><span class="s-og-sujeto">El participante</span></td>
+          <td style="width:42%"><span class="s-og-accion">-</span></td>
+          <td style="width:42%"><span class="s-og-condicion">-</span></td>
+        </tr>
       </table>
 
       <table class="t">
-
         <tr><td colspan="4" class="sh">OBJETIVOS PARTICULARES</td></tr>
-
-        <tr><td class="subh" style="width:15%">Sujeto</td><td class="subh" style="width:30%">Acción o comportamiento</td><td class="subh" style="width:30%">Condición de operación</td><td class="subh" style="width:25%">Temas</td></tr>
-
+        <tr>
+          <td class="subh" style="width:14%">Sujeto</td>
+          <td class="subh" style="width:28%">Acción o comportamiento</td>
+          <td class="subh" style="width:28%">Condición de operación</td>
+          <td class="subh" style="width:30%">Temas</td>
+        </tr>
         <tbody id="ai-objetivos">
-
           <tr><td colspan="4" style="text-align:center">Generando objetivos...</td></tr>
-
         </tbody>
-
       </table>
 
       <table class="t">
-
         <tr><td colspan="4" class="sh">REQUERIMIENTOS</td></tr>
-
         <tr>
-
           <td class="subh" style="width:25%">Requerimientos en instalaciones, mobiliario y su distribución</td>
-
           <td class="subh" style="width:25%">Requerimientos en equipo de apoyo y su distribución</td>
-
-          <td class="subh" style="width:30%">Requerimientos en materiales de apoyo</td>
-
-          <td class="subh" style="width:20%">Requerimientos humanos</td>
-
+          <td class="subh" style="width:28%">Requerimientos en materiales de apoyo</td>
+          <td class="subh" style="width:22%">Requerimientos humanos</td>
         </tr>
-
         <tr>
-
-          <td style="width:25%"><ul class="dl"><li>Sala con espacio para <span class="s-part">45</span>&nbsp;personas</li><li><span class="s-part">45</span>&nbsp;sillas individuales</li><li>5 mesas de trabajo</li></ul></td>
-
-          <td style="width:25%"><ul class="dl"><li>Proyector o TV ≥ 40 pulgadas</li><li>Cable HDMI y extensión eléctrica</li><li>Pizarrón blanco y apuntador láser</li><li>Conexión a internet de alta velocidad</li></ul></td>
-
-          <td style="width:30%"><ul class="dl"><li><span class="s-part">45</span>&nbsp;cuadernillos del participante</li><li><span class="s-part">45</span>&nbsp;formatos evaluación diagnóstica</li><li><span class="s-part">45</span>&nbsp;formatos evaluación formativa (lista de cotejo por módulo)</li><li><span class="s-part">45</span>&nbsp;formatos evaluación sumativa</li><li><span class="s-part">45</span>&nbsp;formatos evaluación de satisfacción</li><li><span class="s-part">45</span>&nbsp;contratos de aprendizaje</li><li>1 lista de asistencia por sesión</li><li>1 lista de verificación de requerimientos</li><li><span class="s-part">45</span>&nbsp;bolígrafos y lápices</li></ul></td>
-
-          <td style="width:20%">No se requiere apoyo adicional para este curso.<br><br><strong>Otros requerimientos:</strong><ul class="dl"><li>Servicio de cafetería</li><li>Conexión a internet de alta velocidad</li><li>Acceso a repositorio digital de materiales</li></ul></td>
-
+          <td><ul class="dl"><li>Sala con espacio para <span class="s-part">45</span> personas</li><li><span class="s-part">45</span> sillas individuales</li><li>5 mesas de trabajo</li></ul></td>
+          <td><ul class="dl"><li>Proyector o TV ≥ 40 pulgadas</li><li>Cable HDMI y extensión eléctrica</li><li>Pizarrón blanco y apuntador láser</li><li>Conexión a internet de alta velocidad</li></ul></td>
+          <td><ul class="dl"><li><span class="s-part">45</span> cuadernillos del participante</li><li><span class="s-part">45</span> formatos evaluación diagnóstica</li><li><span class="s-part">45</span> formatos evaluación formativa (lista de cotejo por módulo)</li><li><span class="s-part">45</span> formatos evaluación sumativa</li><li><span class="s-part">45</span> formatos evaluación de satisfacción</li><li><span class="s-part">45</span> contratos de aprendizaje</li><li>1 lista de asistencia por sesión</li><li>1 lista de verificación de requerimientos</li><li><span class="s-part">45</span> bolígrafos y lápices</li></ul></td>
+          <td>No se requiere apoyo adicional para este curso.<br><br><strong>Otros requerimientos:</strong><ul class="dl"><li>Servicio de cafetería</li><li>Conexión a internet de alta velocidad</li><li>Acceso a repositorio digital de materiales</li></ul></td>
         </tr>
-
       </table>
 
       <table class="t">
-
-        <tr><td colspan="4" class="sh">FORMAS, MOMENTOS Y CRITERIOS DE La EVALUACIÓN</td></tr>
-
+        <tr><td colspan="4" class="sh">FORMAS, MOMENTOS Y CRITERIOS DE LA EVALUACIÓN</td></tr>
         <tr><td colspan="4">La Evaluación se llevará a cabo durante la Apertura, el Desarrollo y el Cierre del Curso. Si el participante cumple con el <strong><span class="s-crit">80% mínimo de la calificación total</span></strong> se considerará aprobado.</td></tr>
-
-        <tr><td class="subh">Aspecto a evaluar</td><td class="subh">Porcentaje</td><td class="subh">Instrumento de evaluación</td><td class="subh">Momento de aplicación</td></tr>
-
+        <tr>
+          <td class="subh">Aspecto a evaluar</td>
+          <td class="subh">Porcentaje</td>
+          <td class="subh">Instrumento de evaluación</td>
+          <td class="subh">Momento de aplicación</td>
+        </tr>
         <tr><td>1. EVALUACIÓN DIAGNÓSTICA</td><td><span class="s-pd-label">Referencial (0%)</span></td><td>Cuestionario de conocimientos previos (Anexo 2)</td><td>Al inicio - Tema</td></tr>
-
         <tr><td>2. EVALUACIÓN FORMATIVA</td><td><span class="s-pf">60</span>%</td><td>Guía de Observación / Lista de Cotejo por tema (Anexo 3)</td><td>Cierre de cada tema</td></tr>
-
         <tr><td>3. EVALUACIÓN SUMATIVA</td><td><span class="s-ps">40</span>%</td><td>Cuestionario integrador + Portafolio (Anexo 4)</td><td>Al final - Tema</td></tr>
-
       </table>
 
-      <table class="t" style="margin-top:10px">
-
-        <tr><td colspan="5" class="sh">COMPROBACIÓN DE La EXISTENCIA Y EL FUNCIONAMIENTO DE LOS RECURSOS REQUERIDOS PARA La SESIÓN</td></tr>
-
-        <tr><td class="subh" style="width:20%">Etapa</td><td class="subh" style="width:32%">Actividades</td><td class="subh" style="width:10%">Duración</td><td class="subh" style="width:20%">Técnicas</td><td class="subh" style="width:18%">Material y Equipo</td></tr>
-
-        <tr><td><strong>Comprobación (instructor)</strong></td><td>1. Aplicar la lista de verificación de requerimientos (Anexo 7)<br>2. Realizar pruebas de funcionamiento del equipo<br>3. Verificar la distribución del mobiliario y equipo<br>4. Verificar la suficiencia de material conforme al número de participantes</td><td>30 min previos al curso</td><td>-</td><td>Lista de verificación de requerimientos</td></tr>
-
+      <table class="t">
+        <tr><td colspan="5" class="sh">COMPROBACIÓN DE LA EXISTENCIA Y EL FUNCIONAMIENTO DE LOS RECURSOS REQUERIDOS PARA LA SESIÓN</td></tr>
+        <tr>
+          <td class="subh" style="width:18%">Etapa</td>
+          <td class="subh" style="width:34%">Actividades</td>
+          <td class="subh" style="width:12%">Duración</td>
+          <td class="subh" style="width:18%">Técnicas Grupales / Instruccionales</td>
+          <td class="subh" style="width:18%">Material y Equipo de Apoyo</td>
+        </tr>
+        <tr>
+          <td><strong>Comprobación (instructor)</strong></td>
+          <td>1. Aplicar la lista de verificación de requerimientos (Anexo 7)<br>2. Realizar pruebas de funcionamiento del equipo<br>3. Verificar la distribución del mobiliario y equipo<br>4. Verificar la suficiencia de material conforme al número de participantes</td>
+          <td>30 min previos al curso</td>
+          <td>-</td>
+          <td>Lista de verificación de requerimientos</td>
+        </tr>
       </table>
 
-      <table class="t" style="margin-top:8px">
-
+      <table class="t">
         <tr><td colspan="5" class="sh">APERTURA O ENCUADRE</td></tr>
-
-        <tr><td class="subh" style="width:20%">Etapa del encuadre</td><td class="subh" style="width:32%">Actividades</td><td class="subh" style="width:10%">Duración</td><td class="subh" style="width:20%">Técnicas Grupales / Instruccionales</td><td class="subh" style="width:18%">Material y Equipo de Apoyo</td></tr>
-
         <tr>
-
+          <td class="subh" style="width:18%">Etapa del encuadre</td>
+          <td class="subh" style="width:34%">Actividades</td>
+          <td class="subh" style="width:12%">Duración</td>
+          <td class="subh" style="width:18%">Técnicas Grupales / Instruccionales</td>
+          <td class="subh" style="width:18%">Material y Equipo de Apoyo</td>
+        </tr>
+        <tr>
           <td rowspan="2"><strong>1. Presentación del Instructor y participantes</strong></td>
-
           <td colspan="4"><strong>Presentarse ante el grupo</strong></td>
-
         </tr>
-
         <tr>
-
           <td>
-
             a) Aplicar Técnica Rompe Hielo: Presentación y objetivo.<br>
-
             <strong>b) Explicar objetivo de la técnica: Que el grupo se conozca entre sí y rompa el hielo, para amenizar la participación y el aprendizaje.</strong><br>
-
             c) Dar las instrucciones de la técnica<br>
-
             Desarrollo: Cada participante se presentará a sí mismo, mencionando su nombre y profesión.<br>
-
             d) Mencionara cuál el objetivo de la actividad<br>
-
             e) Mencionar el tiempo para realizarla<br>
-
             f) Participar con el grupo en la técnica<br>
-
             g) Controlar el tiempo para realizar la técnica.<br>
-
             h) Propiciar la presentación de los participantes<br>
-
             i) Lista de Asistencia.
-
           </td>
-
           <td>3 min</td>
-
           <td>Técnica rompe hielo.</td>
-
           <td>Presentación en power point<br>Lap top<br>Pantalla TV</td>
-
         </tr>
-
         <tbody style="page-break-inside: avoid;">
-
         <tr>
-
           <td rowspan="5"><strong>2. Presentación del Curso</strong></td>
-
-          <td>
-
-            <strong>1) Presentar la descripción general del desarrollo del curso</strong><br>
-
-            <span id="ai-desc-general">-</span>
-
-          </td>
-
+          <td><strong>1) Presentar la descripción general del desarrollo del curso</strong><br><span id="ai-desc-general">-</span></td>
           <td>1 min</td>
-
           <td>Técnica rompe hielo</td>
-
           <td rowspan="5">Presentación en power point<br>Lap top<br>Pantalla TV</td>
-
         </tr>
-
         <tr>
-
-          <td>
-
-            <strong>2) Presentar los objetivos del curso</strong><br>
-
-            <span id="ai-objs-particulares">-</span>
-
-          </td>
-
+          <td><strong>2) Presentar los objetivos del curso</strong><br><span id="ai-objs-particulares">-</span></td>
           <td>1 min</td>
-
           <td>Técnica rompe hielo</td>
-
         </tr>
-
         <tr>
-
-          <td>
-
-            <strong>3) Mencionar el temario del curso</strong><br>
-
-            El curso contendrá el siguiente temario:<br>
-
-            <span id="ai-temario-encuadre">-</span>
-
-          </td>
-
+          <td><strong>3) Mencionar el temario del curso</strong><br>El curso contendrá el siguiente temario:<br><span id="ai-temario-encuadre">-</span></td>
           <td>1 min</td>
-
           <td>Técnica rompe hielo</td>
-
         </tr>
-
         <tr>
-
-          <td>
-
-            <strong>4) Explicar los beneficios del curso y su relación con la experiencia laboral y personal.</strong><br>
-
-            <span id="ai-beneficios-curso">-</span>
-
-          </td>
-
+          <td><strong>4) Explicar los beneficios del curso y su relación con la experiencia laboral y personal.</strong><br><span id="ai-beneficios-curso">-</span></td>
           <td>2 min</td>
-
           <td>Técnica expositiva</td>
-
         </tr>
-
         <tr>
-
-          <td>
-
-            <strong>5) Crear un ambiente participativo mediante preguntas al grupo</strong><br>
-
-            <span id="ai-rompehielo">-</span>
-
-          </td>
-
+          <td><strong>5) Crear un ambiente participativo mediante preguntas al grupo</strong><br><span id="ai-rompehielo">-</span></td>
           <td>1 min</td>
-
           <td>Técnica de diálogo</td>
-
         </tr>
-
         </tbody>
-
         <tr><td><strong>3. Momentos e Instrumentos de Evaluación</strong></td><td>Especificar el tipo de evaluaciones:<br>a)&nbsp;<strong>Diagnóstica:</strong>&nbsp;cuestionario al inicio sin valor en calificación<br>b)&nbsp;<strong>Formativa:</strong>&nbsp;listas de cotejo por módulo, valor del&nbsp;<span class="s-pf">60</span>%<br>c)&nbsp;<strong>Sumativa:</strong>&nbsp;cuestionario + portafolio, valor del&nbsp;<span class="s-ps">40</span>%<br>Criterio de aprobación:&nbsp;<span class="s-crit">80% mínimo</span> de la calificación total</td><td>3 min</td><td>Técnica Expositiva</td><td>Presentación PowerPoint<br>Laptop / TV</td></tr>
-
         <tr><td><strong>4. Acuerdos y compromisos</strong></td><td>1. Revisar expectativas del grupo (capturar en documento compartido)<br>2. Acordar con el grupo las Reglas de operación del curso<br>3. Realizar el Contrato de Aprendizaje:<br>&nbsp;&nbsp;&nbsp;a) Indicar alcances e instrucciones<br>&nbsp;&nbsp;&nbsp;b) Informar que el contrato deja constancia de derechos y obligaciones<br>&nbsp;&nbsp;&nbsp;c) Tiempo para realizarlo: 3 minutos<br>&nbsp;&nbsp;&nbsp;d) Aclarar las dudas que se presenten</td><td>5 min</td><td>Técnica Expositiva / Trabajo individual</td><td><span class="s-part">45</span>&nbsp;contratos de aprendizaje<br>Bolígrafos</td></tr>
-
         <tr><td><strong>5. Evaluación Diagnóstica</strong></td><td>a) Indicar que es solo para verificar conocimientos previos y no afecta la calificación final<br>b) Tiempo para contestarla: 5 minutos<br>c) Aclarar las dudas que se presenten<br>d) Recoger y registrar resultados para ajustar estrategia de enseñanza</td><td>8 min</td><td>Evaluación Diagnóstica (Anexo 2)</td><td><span class="s-part">45</span>&nbsp;cuestionarios impresos<br>Bolígrafos</td></tr>
-
         <tr><td colspan="4"><strong>SUMATORIA DE TIEMPO DEL ENCUADRE: 25 minutos</strong></td><td></td></tr>
-
       </table>
 
-      <table class="t" style="margin-top:8px">
-
+      <table class="t">
         <tr><td colspan="5" class="sh">DESARROLLO</td></tr>
-
-        <tr><td class="subh" style="width:20%">Temas / Subtemas</td><td class="subh" style="width:32%">Actividades</td><td class="subh" style="width:10%">Duración</td><td class="subh" style="width:20%">Técnicas Grupales / Instruccionales</td><td class="subh" style="width:18%">Material y Equipo de Apoyo</td></tr>
-
+        <tr>
+          <td class="subh" style="width:20%">Temas / Subtemas</td>
+          <td class="subh" style="width:32%">Actividades</td>
+          <td class="subh" style="width:10%">Duración</td>
+          <td class="subh" style="width:20%">Técnicas Grupales / Instruccionales</td>
+          <td class="subh" style="width:18%">Material y Equipo de Apoyo</td>
+        </tr>
         <tbody id="ai-modulos">
-
-          <!-- Modulos inyectados por IA -->
-
+          <tr class="carta-receso-cafe" data-carta-receso="1" style="background:#FFFDE7">
+            <td></td>
+            <td><strong>Servicio de Café</strong></td>
+            <td><strong>3 minutos</strong></td>
+            <td></td>
+            <td></td>
+          </tr>
         </tbody>
-
-        <tr><td colspan="5" style="font-size:9pt;line-height:1.45"><strong>TOTAL DESARROLLO TEMÁTICO:</strong> <span id="s-total-desarrollo-txt">-</span><br>
-
+        <tr><td colspan="5"><strong>TOTAL DESARROLLO TEMÁTICO:</strong> <span id="s-total-desarrollo-txt">-</span><br>
         <span id="s-linea-tiempos-meta" style="font-weight:normal"><span id="s-meta-linea-detalle">Encuadre + desarrollo + cierre = duración oficial del curso.</span></span></td></tr>
-
       </table>
 
-      <table class="t" style="margin-top:8px">
-
+      <table class="t">
         <tr><td colspan="5" class="sh">CIERRE</td></tr>
-
-        <tr><td class="subh" style="width:20%">Temas / Subtemas</td><td class="subh" style="width:32%">Actividades</td><td class="subh" style="width:10%">Duración</td><td class="subh" style="width:20%">Técnicas Grupales / Instruccionales</td><td class="subh" style="width:18%">Material y Equipo de Apoyo</td></tr>
-
+        <tr>
+          <td class="subh" style="width:20%">Temas / Subtemas</td>
+          <td class="subh" style="width:32%">Actividades</td>
+          <td class="subh" style="width:10%">Duración</td>
+          <td class="subh" style="width:20%">Técnicas Grupales / Instruccionales</td>
+          <td class="subh" style="width:18%">Material y Equipo de Apoyo</td>
+        </tr>
         <tr><td><strong>1. Resumen</strong></td><td>Mencionar el resumen general del curso: los módulos desarrollados, los documentos elaborados y las competencias adquiridas. Reforzar el hilo conductor del ciclo de vida del tema.</td><td>3 min</td><td>Técnica grupal de cierre</td><td>Laptop<br>Presentación PowerPoint<br>Pantalla / TV</td></tr>
-
         <tr><td><strong>2. Logro de expectativas</strong></td><td>Recuperar el documento de expectativas inicial y revisar en grupo cuáles se cumplieron. Abrir espacio para comentarios de los participantes.</td><td>3 min</td><td>Técnica grupal de cierre</td><td>Laptop<br>Presentación PowerPoint<br>Pantalla / TV</td></tr>
-
         <tr><td><strong>3. Logro de objetivos</strong></td><td>Dialogar con los participantes sobre si lograron identificar, desarrollar y aplicar los procesos del curso. Contrastar con los 3 objetivos particulares (cognitivo, psicomotor, afectivo).</td><td>3 min</td><td>Técnica grupal de cierre</td><td>Laptop<br>Presentación PowerPoint<br>Pantalla / TV</td></tr>
-
         <tr><td><strong>4. Sugerencias de continuidad del aprendizaje</strong></td><td>Sugerir recursos para seguir aprendiendo:<br><span id="ai-continuidad">-</span></td><td>3 min</td><td>Técnica grupal de cierre</td><td>Laptop<br>Presentación PowerPoint</td></tr>
-
         <tr><td><strong>5. Compromisos de aplicación del aprendizaje</strong></td><td>Conducir al grupo a reflexionar y escribir un compromiso concreto de aplicación en su entorno (ej. revisar procesos de su empresa, implementar plan de mejora). Compartir en grupo.</td><td>5 min</td><td>Técnica grupal de cierre</td><td>Hojas en blanco<br>Bolígrafos</td></tr>
-
         <tr><td><strong>6. Evaluación de satisfacción</strong></td><td>a) Indicar alcance: detectar percepción del curso y áreas de mejora<br>b) Tiempo de llenado: 5 minutos<br>c) Aclarar dudas durante su aplicación</td><td>8 min</td><td>Técnica grupal de cierre</td><td><span class="s-part">45</span>&nbsp;formatos de evaluación de satisfacción (Anexo 6)<br>Bolígrafos</td></tr>
-
         <tr><td colspan="4"><strong>SUMATORIA CIERRE: <span id="s-sumatoria-cierre">25 minutos</span> | DURACIÓN OFICIAL DEL CURSO: <span id="s-total-curso-humano">-</span></strong></td><td></td></tr>
-
       </table>
 
-      <div class="etapa" style="margin-top:10px" id="ai-nota-tiempos"><strong>📝 NOTA:</strong> Los tiempos de cada actividad se expresan en minutos. La suma encuadre + desarrollo + cierre coincide exactamente con la duración total del curso.</div>
+      <div class="etapa" style="margin-top:10px" id="ai-nota-tiempos"><strong>NOTA:</strong> Los tiempos de cada actividad se expresan en minutos. La suma encuadre + desarrollo + cierre coincide exactamente con la duración total del curso.</div>
 
     </div>
 
@@ -938,7 +970,13 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
       <div class="mp-section manual-sheet-break"><h3>Índice</h3>
 
-        <div id="ai-mp-index"><div class="mp-index-item" data-toc-anchor="toc-presentacion"><span>Presentación del curso</span><span class="toc-pg">1</span></div><div class="mp-index-item"><span>INTRODUCCIÓN</span><span>5</span></div><div class="mp-index-item"><span>OBJETIVOS DEL CURSO</span><span>7</span></div><div class="mp-index-item"><span>TEMARIO DEL CURSO</span><span>9</span></div><div class="mp-index-item" data-toc-anchor="toc-fuentes"><span>Fuentes de información</span><span class="toc-pg">1</span></div></div>
+        <div id="ai-mp-index">
+          <div class="mp-index-item" data-toc-anchor="toc-presentacion"><span class="toc-label">Presentación del curso</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">1</span></div>
+          <div class="mp-index-item"><span class="toc-label">INTRODUCCIÓN</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">5</span></div>
+          <div class="mp-index-item"><span class="toc-label">OBJETIVOS DEL CURSO</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">7</span></div>
+          <div class="mp-index-item"><span class="toc-label">TEMARIO DEL CURSO</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">9</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-fuentes"><span class="toc-label">Fuentes de información</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">1</span></div>
+        </div>
 
       </div>
 
@@ -990,15 +1028,11 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
       <div class="mi-cover">
 
-        <div class="mp-kicker">Manual del</div>
+        <div class="mi-cover-course"><span class="s-curso">Generador de Cursos</span></div>
 
-        <div class="mp-title">Instructor</div>
-
-        <div class="mp-subtitle"><span class="s-curso">Generador de Cursos</span></div>
+        <div class="mi-cover-doc">Manual del Instructor</div>
 
         <div class="mp-author">
-          <div class="mp-cover-person"><span class="s-inst">-</span><br><span class="mp-cover-role">Instructor del curso</span></div>
-          <div class="mp-author-gap"></div>
           <div class="mp-cover-person"><span class="s-dis">-</span><br><span class="mp-cover-role">Diseñador del curso</span></div>
         </div>
 
@@ -1006,13 +1040,29 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
       <div class="mp-section manual-sheet-break"><h3>Índice</h3>
 
-        <div id="ai-mi-index"><div class="mp-index-item" data-toc-anchor="toc-mi-intro"><span>Introducción</span><span class="toc-pg">1</span></div><div class="mp-index-item" data-toc-anchor="toc-mi-req"><span>Requerimientos para el Curso</span><span class="toc-pg">1</span></div><div class="mp-index-item" data-toc-anchor="toc-mi-fuentes"><span>Fuentes de información</span><span class="toc-pg">1</span></div><div class="mp-index-item" data-toc-anchor="toc-mi-anexo-carta-wrap"><span>Anexo 1: Carta Descriptiva</span><span class="toc-pg">1</span></div><div class="mp-index-item" data-toc-anchor="toc-mi-anexo-diag-wrap"><span>Anexo 2: Instrumentos de Evaluación (Diagnóstica)</span><span class="toc-pg">1</span></div><div class="mp-index-item" data-toc-anchor="toc-mi-anexo-form-wrap"><span>Anexo 3: Evaluación Formativa o Guía de Observación</span><span class="toc-pg">1</span></div><div class="mp-index-item" data-toc-anchor="toc-mi-anexo-sum-wrap"><span>Anexo 4: Evaluación Sumativa</span><span class="toc-pg">1</span></div><div class="mp-index-item" data-toc-anchor="toc-mi-anexo-resp-wrap"><span>Anexo 5: Hoja de Respuestas</span><span class="toc-pg">1</span></div><div class="mp-index-item" data-toc-anchor="toc-mi-anexo-sat-wrap"><span>Anexo 6: Evaluación de Satisfacción</span><span class="toc-pg">1</span></div><div class="mp-index-item" data-toc-anchor="toc-mi-anexo-veri-wrap"><span>Anexo 7: Lista de verificación de requerimientos</span><span class="toc-pg">1</span></div></div>
+        <div id="ai-mi-index">
+          <div class="mp-index-item" data-toc-anchor="toc-mi-intro"><span class="toc-label">Introducción</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">3</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-req"><span class="toc-label">Requerimientos para el Curso</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">4</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-parte-0"><span class="toc-label">Parte 1</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">5</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-parte-1"><span class="toc-label">Parte 2</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">6</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-parte-2"><span class="toc-label">Parte 3</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">7</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-parte-3"><span class="toc-label">Parte 4</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">8</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-parte-4"><span class="toc-label">Parte 5</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">9</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-fuentes"><span class="toc-label">Fuentes de información</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">10</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-carta-wrap"><span class="toc-label">Anexo 1: Carta Descriptiva</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">11</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-diag-wrap"><span class="toc-label">Anexo 2: Instrumentos de Evaluación (Diagnóstica)</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">12</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-form-wrap"><span class="toc-label">Anexo 3: Evaluación Formativa o Guía de Observación</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">13</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-sum-wrap"><span class="toc-label">Anexo 4: Evaluación Sumativa</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">14</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-resp-wrap"><span class="toc-label">Anexo 5: Hoja de Respuestas</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">15</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-sat-wrap"><span class="toc-label">Anexo 6: Evaluación de Satisfacción</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">16</span></div>
+          <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-veri-wrap"><span class="toc-label">Anexo 7: Lista de verificación de requerimientos</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">17</span></div>
+        </div>
 
       </div>
 
       <div class="mp-section manual-sheet-break" id="toc-mi-intro"><h3>Introducción</h3>
 
-        <p>Estimado/a instructor/a, bienvenido/a al curso "<strong><span class="s-curso">Curso</span></strong>". Este manual tiene como propósito guiarte a través de los temas clave del curso y proporcionarte las herramientas necesarias para impartirlo de manera efectiva, asegurando que los participantes comprendan el concepto central, aprendan a aplicarlo correctamente y valoren su importancia para la toma de decisiones informadas en su vida personal y profesional.</p>
+        <p>Estimado instructor, bienvenido al curso «<strong><span class="s-curso">Curso</span></strong>». Este manual tiene como propósito guiarte a través de los temas clave del curso y proporcionarte las herramientas necesarias para impartirlo de manera efectiva, asegurando que los participantes comprendan el concepto central, aprendan a aplicarlo correctamente y valoren su importancia para la toma de decisiones informadas en su vida personal y profesional.</p>
 
         <p style="margin-top:7px">El curso está estructurado de la siguiente manera: portada, índice, introducción, contenido, estrategias para desarrollar cada tema, técnicas para aplicar durante la sesión, tiempos de evaluación, ejemplos prácticos, bibliografía y fuentes de consulta, así como la utilización de la carta descriptiva, instrumentos de evaluación y claves de respuesta para las actividades de aprendizaje.</p>
 
@@ -1096,7 +1146,76 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
       <div id="ai-mi-body">
 
-         <!-- Partes inyectadas por IA -->
+        <div class="mp-section mi-parte manual-sheet-break" id="toc-mi-parte-0">
+          <h3>Parte 1</h3>
+          <p class="mi-parte-h">Temas a desarrollar:</p>
+          <ul class="dl"><li>Se cargarán al aplicar el contenido del curso.</li></ul>
+          <p class="mi-parte-h">Sugerencias de apoyo para la explicación de los temas</p>
+          <ul class="dl"><li>Revisar el Manual del Participante para ver el desglose de los temas a explicar.</li></ul>
+          <p class="mi-parte-h">Técnicas para el desarrollo del tema</p>
+          <ul class="dl"><li>La técnica instruccional será expositiva.</li></ul>
+          <p class="mi-parte-h">Forma, criterios y tiempos de evaluación</p>
+          <ul class="dl"><li>La evaluación diagnóstica se realizará mediante un cuestionario escrito al inicio.</li><li>Tiempo para contestarla: 5 minutos máximo.</li><li>Valor: 0% (solo se usará como referencia del conocimiento previo).</li></ul>
+          <p class="mi-parte-h">Actividades para reforzar el aprendizaje</p>
+          <p class="mi-parte-subh">Preguntas dirigidas:</p>
+          <ul class="dl"><li>¿Cuáles son los puntos clave de esta parte?</li></ul>
+        </div>
+        <div class="mp-section mi-parte manual-sheet-break" id="toc-mi-parte-1">
+          <h3>Parte 2</h3>
+          <p class="mi-parte-h">Temas a desarrollar:</p>
+          <ul class="dl"><li>Se cargarán al aplicar el contenido del curso.</li></ul>
+          <p class="mi-parte-h">Sugerencias de apoyo para la explicación de los temas</p>
+          <ul class="dl"><li>Revisar el Manual del Participante para ver el desglose de los temas a explicar.</li></ul>
+          <p class="mi-parte-h">Técnicas para el desarrollo del tema</p>
+          <ul class="dl"><li>La técnica instruccional será expositiva con ejemplos prácticos y diálogo.</li></ul>
+          <p class="mi-parte-h">Forma, criterios y tiempos de evaluación</p>
+          <ul class="dl"><li>La evaluación formativa será mediante la resolución de un caso práctico individual, revisado con una lista de cotejo.</li><li>Tiempo para contestarla: 7 minutos máximo.</li><li>Valor: 60%.</li></ul>
+          <p class="mi-parte-h">Actividades para reforzar el aprendizaje</p>
+          <p class="mi-parte-subh">Preguntas dirigidas:</p>
+          <ul class="dl"><li>¿Cómo aplicarías este tema en tu entorno laboral?</li></ul>
+        </div>
+        <div class="mp-section mi-parte manual-sheet-break" id="toc-mi-parte-2">
+          <h3>Parte 3</h3>
+          <p class="mi-parte-h">Temas a desarrollar:</p>
+          <ul class="dl"><li>Se cargarán al aplicar el contenido del curso.</li></ul>
+          <p class="mi-parte-h">Sugerencias de apoyo para la explicación de los temas</p>
+          <ul class="dl"><li>Revisar el Manual del Participante para ver el desglose de los temas a explicar.</li></ul>
+          <p class="mi-parte-h">Técnicas para el desarrollo del tema</p>
+          <ul class="dl"><li>La técnica instruccional será expositiva con ejemplos prácticos y diálogo.</li></ul>
+          <p class="mi-parte-h">Forma, criterios y tiempos de evaluación</p>
+          <ul class="dl"><li>La evaluación formativa será mediante la resolución de un caso práctico individual, revisado con una lista de cotejo.</li><li>Tiempo para contestarla: 7 minutos máximo.</li><li>Valor: 60%.</li></ul>
+          <p class="mi-parte-h">Actividades para reforzar el aprendizaje</p>
+          <p class="mi-parte-subh">Preguntas dirigidas:</p>
+          <ul class="dl"><li>¿Qué errores comunes deben evitarse en este tema?</li></ul>
+        </div>
+        <div class="mp-section mi-parte manual-sheet-break" id="toc-mi-parte-3">
+          <h3>Parte 4</h3>
+          <p class="mi-parte-h">Temas a desarrollar:</p>
+          <ul class="dl"><li>Se cargarán al aplicar el contenido del curso.</li></ul>
+          <p class="mi-parte-h">Sugerencias de apoyo para la explicación de los temas</p>
+          <ul class="dl"><li>Revisar el Manual del Participante para ver el desglose de los temas a explicar.</li></ul>
+          <p class="mi-parte-h">Técnicas para el desarrollo del tema</p>
+          <ul class="dl"><li>La técnica instruccional será expositiva con ejemplos prácticos y diálogo.</li></ul>
+          <p class="mi-parte-h">Forma, criterios y tiempos de evaluación</p>
+          <ul class="dl"><li>La evaluación formativa será mediante la resolución de un caso práctico individual, revisado con una lista de cotejo.</li><li>Tiempo para contestarla: 7 minutos máximo.</li><li>Valor: 60%.</li></ul>
+          <p class="mi-parte-h">Actividades para reforzar el aprendizaje</p>
+          <p class="mi-parte-subh">Preguntas dirigidas:</p>
+          <ul class="dl"><li>¿Qué beneficios aporta dominar este tema?</li></ul>
+        </div>
+        <div class="mp-section mi-parte manual-sheet-break" id="toc-mi-parte-4">
+          <h3>Parte 5</h3>
+          <p class="mi-parte-h">Temas a desarrollar:</p>
+          <ul class="dl"><li>Se cargarán al aplicar el contenido del curso.</li></ul>
+          <p class="mi-parte-h">Sugerencias de apoyo para la explicación de los temas</p>
+          <ul class="dl"><li>Revisar el Manual del Participante y la carta descriptiva para orientarse en los puntos clave.</li></ul>
+          <p class="mi-parte-h">Técnicas para el desarrollo del tema</p>
+          <ul class="dl"><li>La técnica instruccional será diálogo-discusión.</li></ul>
+          <p class="mi-parte-h">Forma, criterios y tiempos de evaluación</p>
+          <ul class="dl"><li>La evaluación sumativa será mediante un cuestionario escrito al cierre del curso.</li><li>Tiempo para contestarla: 10 minutos máximo.</li><li>Valor: 40%.</li></ul>
+          <p class="mi-parte-h">Actividades para reforzar el aprendizaje</p>
+          <p class="mi-parte-subh">Preguntas dirigidas:</p>
+          <ul class="dl"><li>¿Cómo usarías este conocimiento para mejorar tu desempeño?</li></ul>
+        </div>
 
       </div>
 
@@ -1113,24 +1232,39 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
       <div id="mi-seccion-anexos-eval" style="display:none">
 
         <div class="mp-section manual-sheet-break" id="toc-mi-anexo-carta-wrap">
-
-        <h3>Anexo 1: Carta Descriptiva</h3>
-
-        <div id="ai-mi-anexo-carta" class="mi-anexo-inj"></div>
-
+          <h3>Anexo 1: Carta Descriptiva</h3>
+          <div id="ai-mi-anexo-carta" class="mi-anexo-inj"></div>
         </div>
 
-        <div class="mp-section manual-sheet-break" id="toc-mi-anexo-diag-wrap"><div id="ai-mi-anexo-diag" class="mi-anexo-inj"></div></div>
+        <div class="mp-section manual-sheet-break" id="toc-mi-anexo-diag-wrap">
+          <h3>Anexo 2: Instrumentos de Evaluación (Diagnóstica)</h3>
+          <div id="ai-mi-anexo-diag" class="mi-anexo-inj"></div>
+        </div>
 
-        <div class="mp-section manual-sheet-break" id="toc-mi-anexo-form-wrap"><div id="ai-mi-anexo-form" class="mi-anexo-inj"></div></div>
+        <div class="mp-section manual-sheet-break" id="toc-mi-anexo-form-wrap">
+          <h3>Anexo 3: Evaluación Formativa o Guía de Observación</h3>
+          <div id="ai-mi-anexo-form" class="mi-anexo-inj"></div>
+        </div>
 
-        <div class="mp-section manual-sheet-break" id="toc-mi-anexo-sum-wrap"><div id="ai-mi-anexo-sum" class="mi-anexo-inj"></div></div>
+        <div class="mp-section manual-sheet-break" id="toc-mi-anexo-sum-wrap">
+          <h3>Anexo 4: Evaluación Sumativa</h3>
+          <div id="ai-mi-anexo-sum" class="mi-anexo-inj"></div>
+        </div>
 
-        <div class="mp-section manual-sheet-break" id="toc-mi-anexo-resp-wrap"><div id="ai-mi-anexo-resp" class="mi-anexo-inj"></div></div>
+        <div class="mp-section manual-sheet-break" id="toc-mi-anexo-resp-wrap">
+          <h3>Anexo 5: Hoja de Respuestas</h3>
+          <div id="ai-mi-anexo-resp" class="mi-anexo-inj"></div>
+        </div>
 
-        <div class="mp-section manual-sheet-break" id="toc-mi-anexo-sat-wrap"><div id="ai-mi-anexo-sat" class="mi-anexo-inj"></div></div>
+        <div class="mp-section manual-sheet-break" id="toc-mi-anexo-sat-wrap">
+          <h3>Anexo 6: Evaluación de Satisfacción</h3>
+          <div id="ai-mi-anexo-sat" class="mi-anexo-inj"></div>
+        </div>
 
-        <div class="mp-section manual-sheet-break" id="toc-mi-anexo-veri-wrap"><div id="ai-mi-anexo-veri" class="mi-anexo-inj"></div></div>
+        <div class="mp-section manual-sheet-break" id="toc-mi-anexo-veri-wrap">
+          <h3>Anexo 7: Lista de verificación de requerimientos</h3>
+          <div id="ai-mi-anexo-veri" class="mi-anexo-inj"></div>
+        </div>
 
       </div>
 
@@ -1172,9 +1306,9 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
             <tr><td class="sh" colspan="4">INFORMACIÓN DEL INSTRUMENTO</td></tr>
 
-            <tr><td><strong>Nombre del Curso:</strong> <span class="s-curso">-</span></td><td class="eval-meta-nowrap"><strong>Duración:</strong> <span class="s-dur">200</span> hrs</td><td><strong>Fecha:</strong> <span class="s-fecha">-</span></td><td><strong>Lugar:</strong> <span class="s-lugar">-</span></td></tr>
+            <tr><td><strong>Nombre del Curso:</strong> <span class="s-curso">-</span></td><td class="eval-meta-nowrap"><strong>Duración:</strong> <span class="s-dur">200</span> horas</td><td><strong>Fecha:</strong> <span class="s-fecha">-</span></td><td><strong>Lugar:</strong> <span class="s-lugar">-</span></td></tr>
 
-            <tr><td><strong>Diseñador:</strong> <span class="s-inst">-</span></td><td><strong>Instructor:</strong> <span class="s-inst">-</span></td><td colspan="2" class="eval-part-plain"><strong class="eval-part-label">Participante:</strong></td></tr>
+            <tr><td><strong>Diseñador:</strong> <span class="s-dis">-</span></td><td><strong>Instructor:</strong> <span class="s-inst">-</span></td><td colspan="2" class="eval-part-plain"><strong class="eval-part-label">Participante:</strong></td></tr>
 
           </table>
 
@@ -1266,7 +1400,7 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
             <tr><td class="sh" colspan="4">INFORMACIÓN</td></tr>
 
-            <tr><td><strong>Nombre del Curso:</strong> <span class="s-curso">-</span></td><td class="eval-meta-nowrap"><strong>Duración:</strong> <span class="s-dur">200</span> hrs</td><td><strong>Instructor:</strong> <span class="s-inst">-</span></td><td><strong>Fecha:</strong> <span class="s-fecha">-</span></td></tr>
+            <tr><td><strong>Nombre del Curso:</strong> <span class="s-curso">-</span></td><td class="eval-meta-nowrap"><strong>Duración:</strong> <span class="s-dur">200</span> horas</td><td><strong>Instructor:</strong> <span class="s-inst">-</span></td><td><strong>Fecha:</strong> <span class="s-fecha">-</span></td></tr>
 
           </table>
 
@@ -1364,7 +1498,7 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
             <tr><td class="sh" colspan="4">INFORMACIÓN</td></tr>
 
-            <tr><td><strong>Nombre del Curso:</strong> <span class="s-curso">-</span></td><td class="eval-meta-nowrap"><strong>Duración:</strong> <span class="s-dur">200</span> hrs</td><td><strong>Instructor:</strong> <span class="s-inst">-</span></td><td><strong>Fecha:</strong> <span class="s-fecha">-</span></td></tr>
+            <tr><td><strong>Nombre del Curso:</strong> <span class="s-curso">-</span></td><td class="eval-meta-nowrap"><strong>Duración:</strong> <span class="s-dur">200</span> horas</td><td><strong>Instructor:</strong> <span class="s-inst">-</span></td><td><strong>Fecha:</strong> <span class="s-fecha">-</span></td></tr>
 
           </table>
 
@@ -1460,7 +1594,7 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
 
 </div>
 
-
+<button type="button" id="btn-scroll-top" class="btn-scroll-top" title="Volver arriba" aria-label="Volver arriba">↑</button>
 
 <script>
 
@@ -1489,9 +1623,12 @@ function showTab(id,btn){
       paginateDocManual(document.getElementById('doc-inst'));
 
       recalculateManualTocPageNumbers();
+      if (typeof window.__toggleScrollTopBtn === 'function') window.__toggleScrollTopBtn();
 
     });
 
+  } else if (typeof window.__toggleScrollTopBtn === 'function') {
+    window.__toggleScrollTopBtn();
   }
 
 }
@@ -1519,20 +1656,28 @@ function setAll(cls,val){
   });
 }
 
-/** Garantiza espacio (nbsp) entre spans dinámicos y el texto siguiente: evita "11cuadernillos" / "Duración:2hrs". */
+/** Garantiza espacio (nbsp) entre spans dinámicos y el texto siguiente: evita "11cuadernillos" / "Duración:2horas". */
 function ensureSpaceAroundDynamicSpan(el){
   if (!el || !el.parentNode) return;
   const next = el.nextSibling;
   if (next && next.nodeType === Node.TEXT_NODE) {
-    const rest = String(next.nodeValue || '').replace(/^[\s\u00A0]+/, '');
-    if (rest && /^[A-Za-zÁÉÍÓÚÜáéíóúüñÑ%]/.test(rest)) {
-      next.nodeValue = '\u00A0' + rest;
+    let rest = String(next.nodeValue || '');
+    // Quitar solo espacios “vacíos”; si el texto empieza con letra/número pegado, insertar nbsp
+    const stripped = rest.replace(/^[\s\u00A0]+/, '');
+    if (!stripped) return;
+    // No insertar espacio antes de % o puntuación de cierre
+    if (/^[%.,;:!?)\]…]/.test(stripped)) {
+      next.nodeValue = stripped;
+      return;
+    }
+    if (/^[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]/.test(stripped)) {
+      next.nodeValue = '\u00A0' + stripped;
     }
     return;
   }
   if (next && next.nodeType === Node.ELEMENT_NODE) {
     const ch = String(next.textContent || '').charAt(0);
-    if (ch && /[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9%]/.test(ch)) {
+    if (ch && /[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]/.test(ch) && ch !== '%') {
       el.after(document.createTextNode('\u00A0'));
     }
   }
@@ -1546,12 +1691,35 @@ function fixAdjacentSpacesInDoc(root){
   ).forEach(ensureSpaceAroundDynamicSpan);
 
   root.querySelectorAll('strong, b').forEach((el) => {
+    if (isTableStructureParent(el.parentNode)) return;
     const next = el.nextSibling;
+    const prev = el.previousSibling;
+    // curso«Tema» cuando « está DENTRO del strong y el texto previo termina sin espacio
+    if (prev && prev.nodeType === Node.TEXT_NODE) {
+      const left = String(prev.nodeValue || '');
+      const right = String(el.textContent || '');
+      if (/[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]$/.test(left) && /^[«"“]/.test(right.trimStart() || right)) {
+        prev.nodeValue = left.replace(/\s*$/, '') + ' ';
+      } else if (/[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]$/.test(left) && /^[«"“]/.test(String(el.innerHTML || ''))) {
+        prev.nodeValue = left.replace(/\s*$/, '') + ' ';
+      }
+    }
+    // Espacio si strong empieza con « y el nodo de texto previo no tiene espacio final
+    if (prev && prev.nodeType === Node.TEXT_NODE) {
+      const left = String(prev.nodeValue || '');
+      const first = String(el.textContent || '').charAt(0);
+      if (/[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]$/.test(left) && /[«"“A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]/.test(first)) {
+        if (!/\s$/.test(left)) prev.nodeValue = left + ' ';
+      }
+    }
     if (!next) return;
     if (next.nodeType === Node.TEXT_NODE) {
       const rest = String(next.nodeValue || '').replace(/^[\s\u00A0]+/, '');
       const endsWithPunct = /[:.;!?]$/.test(String(el.textContent || '').trim());
+      const endsWithQuote = /[»"”]$/.test(String(el.textContent || '').trim());
       if (rest && endsWithPunct && /^[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]/.test(rest)) {
+        next.nodeValue = '\u00A0' + rest;
+      } else if (rest && endsWithQuote && /^[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]/.test(rest)) {
         next.nodeValue = '\u00A0' + rest;
       }
       return;
@@ -1566,6 +1734,25 @@ function fixAdjacentSpacesInDoc(root){
       }
     }
   });
+
+  // Reparar "curso«" dentro de un mismo nodo de texto
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    if (isTableStructureParent(node.parentNode)) {
+      node = walker.nextNode();
+      continue;
+    }
+    const v = String(node.nodeValue || '');
+    if (/[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9][«"“]/.test(v) || /[»"”][A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]/.test(v)) {
+      node.nodeValue = v
+        .replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])([«"“])/g, '$1 $2')
+        .replace(/([»"”])([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])/g, '$1 $2');
+    }
+    node = walker.nextNode();
+  }
+
+  scrubInvalidTableWhitespace(root);
 }
 
 function fmtFecha(v){
@@ -1580,7 +1767,10 @@ function fmtFecha(v){
 }
 
 function ensureTemaConVerbo(tema, dominio, idx){
-  const clean = normalizeCourseNormText(String(tema || '')).trim();
+  let clean = sanitizeManualPlainChunk(String(tema || '')).trim();
+  if (!clean || clean === '-') return '-';
+  // Quitar prefijos de lista tipo "A ", "A.", "B)" que la IA mete en temas
+  clean = clean.replace(/^[A-Z][\.\)]\s+/i, '').replace(/^A\s+/i, '').trim();
   if (!clean) return '-';
   const i = typeof idx === 'number' && !Number.isNaN(idx) ? Math.max(0, Math.floor(idx)) : 0;
   const key = dominio === 'psicomotor' || dominio === 'afectivo' ? dominio : 'cognitivo';
@@ -1590,6 +1780,8 @@ function ensureTemaConVerbo(tema, dominio, idx){
     afectivo: ['Apreciar', 'Asumir', 'Adoptar', 'Reconocer', 'Manifestar', 'Internalizar']
   };
   const list = pools[key];
+  const verbStem =
+    'identificar|describir|explicar|analizar|aplicar|demostrar|ejecutar|simular|valorar|adoptar|reconocer|comprender|interpretar|evaluar|distinguir|comparar|documentar|implementar|establecer|priorizar|enunciar|relacionar|clasificar|practicar|utilizar|manejar|apreciar|asumir|internalizar|manifestar|desarrollar|implementar|resolver|comunicar';
   const sustituirPrefijoRepetido = (re) => {
     if (!re.test(clean)) return null;
     const rest = clean.replace(re, '').trim();
@@ -1598,17 +1790,20 @@ function ensureTemaConVerbo(tema, dominio, idx){
     return `${list[i % list.length]} ${restLc}`;
   };
   if (key === 'cognitivo') {
-    const v = sustituirPrefijoRepetido(/^identificar\s+/i);
+    const v = sustituirPrefijoRepetido(/^identificar(á)?\s+/i);
     if (v) return v;
   } else if (key === 'psicomotor') {
-    const v = sustituirPrefijoRepetido(/^aplicar\s+/i);
+    const v = sustituirPrefijoRepetido(/^aplicar(á)?\s+/i);
     if (v) return v;
   } else {
-    const v = sustituirPrefijoRepetido(/^valorar\s+/i);
+    const v = sustituirPrefijoRepetido(/^valorar(á)?\s+/i);
     if (v) return v;
   }
-  const startsWithVerb = /^(identificar|describir|explicar|analizar|aplicar|demostrar|ejecutar|simular|valorar|adoptar|reconocer|comprender|interpretar|evaluar|distinguir|comparar|documentar|implementar|establecer|priorizar|enunciar|relacionar|clasificar|practicar|utilizar|manejar|apreciar|asumir|internalizar|manifestar)\b/i.test(clean);
-  if (startsWithVerb) return clean;
+  // Infinitivo o futuro (explicar / explicará)
+  const startsWithVerb = new RegExp('^(' + verbStem + ')(á)?\\b', 'i').test(clean);
+  if (startsWithVerb) {
+    return clean.charAt(0).toUpperCase() + clean.slice(1);
+  }
   const rest = clean.charAt(0).toLowerCase() + clean.slice(1);
   const prefijo = list[i % list.length];
   return `${prefijo} ${rest}`;
@@ -1655,8 +1850,26 @@ function getCurrentCourseNormReference(){
   return '';
 }
 
+function repairMojibakeText(text){
+  let s = String(text || '');
+  if (!s || !/[ÃÂ�]|TAccnica|A¿Por|A�/i.test(s)) return s;
+  s = s
+    .replace(/Ã¡/g, 'á').replace(/Ã©/g, 'é').replace(/Ã­/g, 'í').replace(/Ã³/g, 'ó').replace(/Ãº/g, 'ú')
+    .replace(/ÃÁ/g, 'Á').replace(/Ã‰/g, 'É').replace(/ÃÍ/g, 'Í').replace(/Ã“/g, 'Ó').replace(/Ãš/g, 'Ú')
+    .replace(/Ã±/g, 'ñ').replace(/Ã‘/g, 'Ñ')
+    .replace(/Ã¼/g, 'ü').replace(/Ãœ/g, 'Ü')
+    .replace(/Â¿/g, '¿').replace(/Â¡/g, '¡').replace(/Âº/g, 'º').replace(/Âª/g, 'ª')
+    .replace(/â€œ/g, '“').replace(/â€/g, '”').replace(/â€˜/g, '‘').replace(/â€™/g, '’')
+    .replace(/â€“/g, '–').replace(/â€”/g, '—')
+    .replace(/TAccnica/gi, 'Técnica')
+    .replace(/T[eé]cnica/gi, (m) => m.replace(/TAccnica/i, 'Técnica'))
+    .replace(/A�Por/g, '¿Por').replace(/A¿Por/g, '¿Por')
+    .replace(/�/g, '');
+  return s;
+}
+
 function normalizeCourseNormText(text){
-  let value = String(text || '');
+  let value = repairMojibakeText(String(text || ''));
   value = value.replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])([«"“])/g, '$1 $2');
   value = value.replace(/([»"”])([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])/g, '$1 $2');
   const normRef = getCurrentCourseNormReference();
@@ -1702,13 +1915,59 @@ function enforceNormConsistencyInCarta(){
   const walker = document.createTreeWalker(carta, NodeFilter.SHOW_TEXT);
   let node = walker.nextNode();
   while (node) {
-    node.nodeValue = normalizeCourseNormText(node.nodeValue);
+    // No convertir whitespace de estructura de tabla en nbsp (rompe columnas)
+    if (isTableStructureParent(node.parentNode)) {
+      node = walker.nextNode();
+      continue;
+    }
+    // Conservar espacios/nbsp estructurales (evita "10cuadernillos" tras trim)
+    node.nodeValue = normalizeCourseNormTextNode(node.nodeValue);
     node = walker.nextNode();
   }
   carta.querySelectorAll('a[href]').forEach((a) => {
     const href = a.getAttribute('href');
     if (!href) return;
     a.setAttribute('href', normalizeCourseNormText(href));
+  });
+  fixAdjacentSpacesInDoc(carta);
+  scrubInvalidTableWhitespace(carta);
+}
+
+/** Quita "A ", "A.", café y viñetas duplicadas en listas del manual en pantalla. */
+function scrubManualParticipantLists(root){
+  if (!root) return;
+  root.querySelectorAll('li, .mp-tem-line, .mp-tem-sub, p.mp-para').forEach((el) => {
+    // Solo nodos de texto directos / primer nivel
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node = walk.nextNode();
+    while (node) {
+      let v = String(node.nodeValue || '');
+      const original = v;
+      // Prefijo A en ítems de lista
+      if (el.tagName === 'LI' || el.classList.contains('mp-tem-line') || el.classList.contains('mp-tem-sub')) {
+        v = v.replace(/^\s*[A-Z][\.\)]\s+/i, '').replace(/^\s*A\s+/i, '');
+        v = v.replace(/^\s*[•●*]+\s*/, '');
+      }
+      v = v
+        .replace(/([¿¡])\s+/g, '$1')
+        .replace(/\s+([?!])/g, '$1')
+        .replace(/([?!])([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])/g, '$1 $2')
+        .replace(/\.([A-ZÁÉÍÓÚÜÑ])/g, '. $1')
+        .replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])([«"“])/g, '$1 $2')
+        .replace(/([»"”])([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])/g, '$1 $2');
+      // Reparar URLs partidas por reglas de puntuación
+      if (/https?:\s*\/\s*\//i.test(v) || /\bwww\.\s+/i.test(v)) {
+        v = collapseSpacesInUrls(v);
+      }
+      if (v !== original) node.nodeValue = v;
+      node = walk.nextNode();
+    }
+    // Ocultar filas de café si quedaran
+    const plain = String(el.textContent || '');
+    if (isCoffeeOrBreakLabel(plain) && (el.classList.contains('mp-tem-line') || el.classList.contains('mp-tem-sub') || el.tagName === 'LI')) {
+      const row = el.closest('.mp-tem-item, .mp-tem-sub, li');
+      if (row) row.remove();
+    }
   });
 }
 
@@ -1718,13 +1977,63 @@ function enforceNormConsistencyInManualParticipante(){
   const walker = document.createTreeWalker(manual, NodeFilter.SHOW_TEXT);
   let node = walker.nextNode();
   while (node) {
-    node.nodeValue = normalizeCourseNormText(node.nodeValue);
+    node.nodeValue = normalizeCourseNormTextNode(node.nodeValue);
     node = walker.nextNode();
   }
   manual.querySelectorAll('a[href]').forEach((a) => {
     const href = a.getAttribute('href');
     if (!href) return;
+    if (/^https?:\/\//i.test(href) || /^www\./i.test(href)) {
+      a.setAttribute('href', collapseSpacesInUrls(href).replace(/\s+/g, ''));
+      return;
+    }
     a.setAttribute('href', normalizeCourseNormText(href));
+  });
+  fixAdjacentSpacesInDoc(manual);
+}
+
+/** Normaliza texto de nodos DOM sin comerse espacios/nbsp al inicio o final. */
+function normalizeCourseNormTextNode(raw){
+  const s = String(raw == null ? '' : raw);
+  if (!s) return s;
+  const m = s.match(/^([\s\u00A0]*)([\s\S]*?)([\s\u00A0]*)$/);
+  if (!m) return normalizeCourseNormText(s);
+  const lead = m[1] || '';
+  const trail = m[3] || '';
+  const core = normalizeCourseNormText(m[2] || '');
+  // Un nbsp al inicio basta para separar spans dinámicos del texto que sigue
+  const leadOut = lead.length ? '\u00A0' : '';
+  let trailOut = '';
+  if (trail.length) {
+    trailOut = /\u00A0/.test(trail) ? '\u00A0' : ' ';
+  }
+  return leadOut + core + trailOut;
+}
+
+/** Padres de tabla donde un nodo de texto rompe el layout (crea columnas fantasma). */
+function isTableStructureParent(el){
+  if (!el || el.nodeType !== 1) return false;
+  const t = el.tagName;
+  return t === 'TABLE' || t === 'THEAD' || t === 'TBODY' || t === 'TFOOT' || t === 'TR' || t === 'COLGROUP';
+}
+
+/** Elimina espacios/nbsp sueltos entre etiquetas de tabla (causa columnas aplastadas). */
+function scrubInvalidTableWhitespace(root){
+  if (!root) return;
+  root.querySelectorAll('table').forEach((table) => {
+    const stack = [table];
+    while (stack.length) {
+      const el = stack.pop();
+      Array.from(el.childNodes).forEach((n) => {
+        if (n.nodeType === Node.TEXT_NODE) {
+          if (isTableStructureParent(el) && /^[\s\u00A0]*$/.test(String(n.nodeValue || ''))) {
+            n.parentNode && n.parentNode.removeChild(n);
+          }
+        } else if (n.nodeType === Node.ELEMENT_NODE) {
+          if (isTableStructureParent(n) || n.tagName === 'COL') stack.push(n);
+        }
+      });
+    }
   });
 }
 
@@ -1784,18 +2093,32 @@ function buildTemarioParticipantListaHtml(data){
       if (seenTema.has(temaKey)) return;
       seenTema.add(temaKey);
       bloqueCount++;
-      html += `<div class="mp-tem-bloque"><p class="mp-tem-num">${bloqueCount}. ${esc(tit)}</p>`;
+      html += `<div class="mp-tem-bloque"><p class="mp-tem-num">${bloqueCount}. Tema ${bloqueCount}: ${esc(tit)}</p>`;
       const sec = m.secuencia_didactica;
       const seenBlock = new Set();
+      // No repetir el título del tema como primer bullet
+      seenBlock.add(temaKey);
       if (Array.isArray(sec) && sec.length) {
         sec.forEach((b) => {
           if (isCoffeeBreakText(b && b.nombre_bloque)) return;
           const parsed = parseNombreBloque(b.nombre_bloque);
-          const bk = (parsed.main || '').toLowerCase();
-          if (!bk || seenBlock.has(bk)) return;
+          if (!parsed.main || isCoffeeBreakText(parsed.main)) return;
+          const bk = (parsed.main || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (!bk || seenBlock.has(bk) || isCoffeeBreakText(bk)) return;
+          // Si el bloque es solo el mismo título del módulo, usar solo subtemas
+          if (bk === temaKey && parsed.subs && parsed.subs.length) {
+            parsed.subs.forEach((sub) => {
+              const line = bulletLine(sub);
+              const sk = sanitizeManualPlainChunk(sub).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+              if (!line || seenBlock.has(sk)) return;
+              seenBlock.add(sk);
+              html += line;
+            });
+            return;
+          }
           seenBlock.add(bk);
           const uniqueSubs = (parsed.subs || []).filter((s) => {
-            const sk = s.toLowerCase();
+            const sk = s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             if (seenBlock.has(sk)) return false;
             seenBlock.add(sk);
             return true;
@@ -1876,12 +2199,16 @@ function mapManualContenidoArrayToHtml(p){
     if (!text) return;
     if (text.startsWith('<')) {
       flushBullets();
-      // Limpiar "A " sueltos y dobles viñetas dentro de HTML de la IA
+      // Limpiar "A " sueltos, viñetas dentro de <li> y espacios con «»
       text = text
+        .replace(/<li[^>]*>\s*[A-Z][\.\)]\s+/gi, (m) => m.replace(/\s*[A-Z][\.\)]\s+$/i, ''))
+        .replace(/<li[^>]*>\s*A\s+/gi, (m) => m.replace(/\s*A\s+$/i, ''))
+        .replace(/<li([^>]*)>\s*[•●]\s*/gi, '<li$1>')
         .replace(/>\s*A[\.\)]\s+/gi, '>')
-        .replace(/>\s*A\s+(?=[a-záéíóúüñ])/gi, '>')
+        .replace(/>\s*A\s+/gi, '>')
         .replace(/[•●]\s*[•●]/g, '•')
-        .replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])([«"“])/g, '$1 $2');
+        .replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])([«"“])/g, '$1 $2')
+        .replace(/curso\s*[«"“]/gi, 'curso «');
       blocks.push(text);
       return;
     }
@@ -1889,8 +2216,8 @@ function mapManualContenidoArrayToHtml(p){
     if (!cleaned) return;
     const looksBullet =
       /^[•●\-\u2013\u2014]/.test(text) ||
-      /^A[\.\)]\s+/i.test(text.trim()) ||
-      /^A\s+[a-záéíóúüñ]/i.test(text.trim()) ||
+      /^[A-Z][\.\)]\s+/i.test(text.trim()) ||
+      /^A\s+/i.test(text.trim()) ||
       (cleaned.length < 180 && !/[.!?]$/.test(cleaned) && cleaned.split(/\s+/).length <= 18);
     if (looksBullet || /^[•●\-]/.test(text) || /^A[\.\)]?\s+/i.test(text.trim())) {
       bulletItems.push(cleaned);
@@ -1914,11 +2241,12 @@ function buildMpPresentacion(data){
   const ben = normalizeCourseNormText(data.beneficios_curso || '').trim();
   const norm = getCurrentCourseNormReference();
   let h = '';
-  h += `<p class="mp-para mp-para-lead"><strong>¡Bienvenidos!</strong> Te damos la cordial bienvenida al curso <strong>«${cursoCompleto}»</strong>. Este curso ha sido diseñado para brindarte los conocimientos y herramientas necesarias para comprender los contenidos centrales, aplicarlos con criterio técnico y valorar su importancia en tu desempeño laboral y en el cumplimiento de la normatividad aplicable.</p>`;
-  h += `<p class="mp-para">El conocimiento de <strong>${curso}</strong> es indispensable para fortalecer el cumplimiento de tus responsabilidades, optimizar procesos y promover prácticas seguras y conformes a la regulación vigente${norm ? `, en particular lo relacionado con la <strong>${mpManualEsc(norm)}</strong>` : ''}.</p>`;
-  if (ben) h += `<p class="mp-para">${mpManualEsc(ben)}</p>`;
+  // &nbsp; explícitos: evitan "¡Bienvenidos!Te" / "curso«…»" / "deExcelencia" / "Clientees" en Word y pantalla
+  h += `<p class="mp-para mp-para-lead"><strong>¡Bienvenidos!</strong>&nbsp;Te damos la cordial bienvenida al curso&nbsp;<strong>«${cursoCompleto}»</strong>. Este curso ha sido diseñado para brindarte los conocimientos y herramientas necesarias para comprender los contenidos centrales, aplicarlos con criterio técnico y valorar su importancia en tu desempeño laboral y en el cumplimiento de la normatividad aplicable.</p>`;
+  h += `<p class="mp-para">El conocimiento de&nbsp;<strong>${curso}</strong>&nbsp;es indispensable para fortalecer el cumplimiento de tus responsabilidades, optimizar procesos y promover prácticas seguras y conformes a la regulación vigente${norm ? `, en particular lo relacionado con la&nbsp;<strong>${mpManualEsc(norm)}</strong>` : ''}.</p>`;
+  if (ben) h += `<p class="mp-para">${mpManualEsc(ensureReadableSpaces(ben))}</p>`;
   h += `<p class="mp-para">Este manual está diseñado para guiarte paso a paso en el aprendizaje, desde los fundamentos y el marco normativo hasta la aplicación práctica y la verificación de lo aprendido mediante las evaluaciones del curso.</p>`;
-  h += `<p class="mp-para"><strong>¡Prepárate para empezar!</strong> Este programa es un paso firme para empoderarte en la toma de decisiones informadas en tu entorno laboral.</p>`;
+  h += `<p class="mp-para"><strong>¡Prepárate para empezar!</strong>&nbsp;Este programa es un paso firme para empoderarte en la toma de decisiones informadas en tu entorno laboral.</p>`;
   h += `<p class="mp-para">El manual está organizado de manera sencilla y práctica: primero se presentan los objetivos y el temario alineado a la carta descriptiva; después, metodología, importancia, beneficios y conceptos clave; al final, un ejercicio práctico, la aplicación en la vida laboral y la conclusión, además de las fuentes de información para que sigas profundizando.</p>`;
   return h;
 }
@@ -1928,34 +2256,53 @@ function buildMpIntroduccion(data){
   const ben = normalizeCourseNormText(data.beneficios_curso || '').trim();
   const norm = getCurrentCourseNormReference();
   let h = '';
-  h += `<p class="mp-para">Bienvenido al curso <strong>«${mpManualEsc(normalizeCourseNameWithNorm(g('f-curso') || ''))}»</strong>. Este manual tiene como objetivo guiarte a través de los temas clave y proporcionarte las herramientas necesarias para comprender el alcance del tema, cómo aplicarlo correctamente y por qué es esencial para tu seguridad en el trabajo y el cumplimiento normativo.</p>`;
+  h += `<p class="mp-para">Bienvenido al curso&nbsp;<strong>«${mpManualEsc(normalizeCourseNameWithNorm(g('f-curso') || ''))}»</strong>. Este manual tiene como objetivo guiarte a través de los temas clave y proporcionarte las herramientas necesarias para comprender el alcance del tema, cómo aplicarlo correctamente y por qué es esencial para tu seguridad en el trabajo y el cumplimiento normativo.</p>`;
   h += `<p class="mp-subheading">¿Por qué es importante conocer ${curso}?</p>`;
-  h += `<p class="mp-para">Dominar este contenido no solo fortalece tu desempeño profesional; también impacta en la calidad de los procesos, en la prevención de riesgos y en la documentación que respalda el cumplimiento ante las instancias correspondientes${norm ? `, en coherencia con la <strong>${mpManualEsc(norm)}</strong>` : ''}.</p>`;
+  h += `<p class="mp-para">Dominar este contenido no solo fortalece tu desempeño profesional; también impacta en la calidad de los procesos, en la prevención de riesgos y en la documentación que respalda el cumplimiento ante las instancias correspondientes${norm ? `, en coherencia con la&nbsp;<strong>${mpManualEsc(norm)}</strong>` : ''}.</p>`;
   h += `<p class="mp-para">Conocerlo y aplicarlo correctamente te permitirá:</p><ul class="mp-ul-bullets">`;
   ['Asegurar un registro y una operación acordes a lo establecido en la normatividad aplicable.','Reducir errores frecuentes que afectan la seguridad o la continuidad del trabajo.','Planificar mejor tus acciones y las de tu equipo con base en criterios técnicos.','Tomar decisiones informadas en trámites y situaciones laborales cotidianas.'].forEach((t) => { h += `<li>${t}</li>`; });
   h += `</ul>`;
-  if (ben) h += `<p class="mp-para">${mpManualEsc(ben)}</p>`;
+  if (ben) h += `<p class="mp-para">${mpManualEsc(ensureReadableSpaces(ben))}</p>`;
   h += `<p class="mp-para">Este curso es una herramienta clave para fortalecer tu perfil profesional y el cumplimiento de las obligaciones que correspondan a tu puesto y a tu centro de trabajo.</p>`;
   return h;
 }
 
 function buildMpObjetivosDelCurso(data){
   const og = data.objetivo_general || {};
-  const general = [og.sujeto, og.accion, og.condicion].filter(Boolean).map((x) => normalizeCourseNormText(x).trim()).join(' ');
+  const stripObjNoise = (s) => {
+    let t = normalizeCourseNormText(String(s || '')).replace(/\s+/g, ' ').trim();
+    t = t.replace(/^(el participante[,:\s]*)+/i, '').trim();
+    t = t.replace(/(al finalizar el curso[,:\s]*)+/gi, ' ').replace(/\s+/g, ' ').trim();
+    return t;
+  };
+  const sujeto = 'El participante';
+  const accG = stripObjNoise(og.accion || '');
+  const condG = stripObjNoise(og.condicion || '');
+  let general = '';
+  if (accG) {
+    general = `${sujeto}, al finalizar el curso, ${accG.charAt(0).toLowerCase()}${accG.slice(1)}`;
+    if (condG) {
+      const c = /^(bajo|con|mediante|en|usando|utilizando)/i.test(condG)
+        ? condG
+        : condG.charAt(0).toLowerCase() + condG.slice(1);
+      general += (/[.!?]$/.test(general) ? ' ' : ', ') + c;
+    }
+    if (!/[.!?]$/.test(general)) general += '.';
+  } else {
+    general = [og.sujeto, og.accion, og.condicion].filter(Boolean).map((x) => normalizeCourseNormText(x).trim()).join(' ');
+    general = sanitizeManualPlainChunk(general);
+  }
   const op = data.objetivos_particulares || {};
   let h = '<h4 class="mp-h4-sec">Objetivo General</h4>';
-  h += `<p class="mp-para">${mpManualEsc(sanitizeManualPlainChunk(general) || 'El participante, al finalizar el curso, integrará los aprendizajes descritos en la carta descriptiva y aplicará los criterios del curso en su contexto laboral.')}</p>`;
+  h += `<p class="mp-para">${mpManualEsc(general || 'El participante, al finalizar el curso, integrará los aprendizajes descritos en la carta descriptiva y aplicará los criterios del curso en su contexto laboral.')}</p>`;
   h += '<h4 class="mp-h4-sec">Objetivos Específicos</h4>';
   ['cognitivo','psicomotor','afectivo'].forEach((dom) => {
     const o = op[dom];
     if (!o) return;
-    let acc = normalizeCourseNormText(o.accion || '').replace(/\s+/g, ' ').trim();
-    if (!acc) return;
-    // Evitar "El Participante, al finalizar el curso al finalizar el curso, ..."
-    acc = acc.replace(/^(el participante[,:\s]*)+/i, '').trim();
-    acc = acc.replace(/^(al finalizar el curso[,:\s]*)+/i, '').trim();
+    let acc = stripObjNoise(o.accion || '');
     if (!acc) return;
     acc = 'El participante, al finalizar el curso, ' + acc.charAt(0).toLowerCase() + acc.slice(1);
+    if (!/[.!?]$/.test(acc)) acc += '.';
     h += `<p class="mp-para">${mpManualEsc(acc)}</p>`;
   });
   return h;
@@ -1984,31 +2331,53 @@ function buildMpQueAprenderas(data){
   const op = data.objetivos_particulares || {};
   const lines = [];
   const seen = new Set();
+  const stripLeadingA = (s) => {
+    let t = String(s || '').trim();
+    // Quitar "A ", "A.", "A)", "B)" una o más veces
+    for (let i = 0; i < 3; i++) {
+      const next = t
+        .replace(/^[•●*\-\u2013\u2014]+\s*/g, '')
+        .replace(/^[A-Z][\.\)]\s+/i, '')
+        .replace(/^A\s+/i, '')
+        .trim();
+      if (next === t) break;
+      t = next;
+    }
+    return t;
+  };
+  const pushLine = (raw, dom, idx) => {
+    let base = stripLeadingA(sanitizeManualPlainChunk(raw));
+    if (!base) return;
+    base = base.replace(/^(El participante[,:\s]*)+/i, '').replace(/^(al finalizar el curso[,:\s]*)+/gi, '').trim();
+    base = stripLeadingA(base);
+    base = sanitizeManualPlainChunk(ensureTemaConVerbo(base, dom || 'cognitivo', idx));
+    base = stripLeadingA(base);
+    if (!base || base === '-') return;
+    // Nunca dejar "A explicará…"
+    if (/^A\s+/i.test(base)) base = base.replace(/^A\s+/i, '').trim();
+    if (!base) return;
+    const key = base.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (seen.has(key)) return;
+    seen.add(key);
+    lines.push(base.charAt(0).toUpperCase() + base.slice(1));
+  };
   ['cognitivo','psicomotor','afectivo'].forEach((dom) => {
     flattenTemasMp(op[dom] && op[dom].temas).forEach((t) => {
-      let base = sanitizeManualPlainChunk(ensureTemaConVerbo(t, dom, lines.length));
-      if (!base) return;
-      // Frase en 2ª persona para el participante
-      base = base.replace(/^(El participante[, ]*)?(al finalizar el curso[, ]*)*/i, '').trim();
-      if (!base) return;
-      const key = base.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      if (seen.has(key)) return;
-      seen.add(key);
-      lines.push(base.charAt(0).toUpperCase() + base.slice(1));
+      pushLine(t, dom, lines.length);
     });
   });
   if (!lines.length && Array.isArray(data.modulos)) {
     data.modulos.forEach((m) => {
       if (isCoffeeOrBreakLabel(m && m.titulo)) return;
-      const tit = String(m.titulo || '').trim();
+      const tit = sanitizeManualPlainChunk(m.titulo || '');
       if (!tit) return;
-      lines.push(`Aplicar con criterio técnico los contenidos del tema: ${tit}.`);
+      pushLine(`Aplicar con criterio técnico los contenidos del tema: ${tit}.`, 'psicomotor', lines.length);
     });
   }
   if (!lines.length) {
     return '<p class="mp-para">Al finalizar el curso habrás integrado los aprendizajes del temario y las evaluaciones de la carta descriptiva.</p>';
   }
-  return '<ul class="mp-ul-bullets">' + lines.map((l) => `<li>${mpManualEsc(l)}</li>`).join('') + '</ul>';
+  return '<ul class="mp-ul-bullets">' + lines.map((l) => `<li>${mpManualEsc(stripLeadingA(l))}</li>`).join('') + '</ul>';
 }
 
 function buildMpMetodologia(data){
@@ -2266,6 +2635,7 @@ function buildMpSingleModuloParticipantHtml(mod){
   };
   seq.forEach((b, idx) => {
     const nb = String(b.nombre_bloque || '').trim();
+    if (isCoffeeOrBreakLabel(nb)) return;
     const act = String(b.actividades || '').trim();
     h += `<div class="mp-bloque-participante" style="margin-bottom:14px">`;
     if (nb) {
@@ -2321,13 +2691,22 @@ function enrichParticipantManualBodyIfThin(innerHtml, p, data, options){
   const opts = options || {};
   const minChars = Number.isFinite(opts.minChars) ? opts.minChars : 48;
   const preferSupplement = !!opts.preferSupplement;
+  const allowModuloExpand = opts.allowModuloExpand !== false;
   const plain = participantManualPlainTextLen(innerHtml);
   const k = p.normalizedKey || '';
   const raw = String(p.rawTitle || '').trim();
   const nk = normMpSectionTitle(k);
   const nr = normMpSectionTitle(raw);
+  const structuralKeys =
+    /temario|que aprenderas|conceptos clave|componentes|objetivos del curso|metodologia|importancia|beneficios|ejercicio|aplicacion|vida laboral|conclusion|introduccion|presentacion/;
+  const isStructural = structuralKeys.test(nk) || structuralKeys.test(nr);
   const needsExpansion = plain < minChars;
   if (!needsExpansion && !preferSupplement) return wrapParticipantManualInner(innerHtml);
+  // No adjuntar "Desarrollo ampliado" a secciones estructurales (evita duplicar temas)
+  if (isStructural && !needsExpansion) return wrapParticipantManualInner(innerHtml);
+  if (!allowModuloExpand || (isStructural && plain >= 80)) {
+    return wrapParticipantManualInner(innerHtml);
+  }
   const hayCierre =
     /\bcierre\b/.test(nk + ' ' + nr) &&
     (/\bevaluacion\b/.test(nk + ' ' + nr) || /\bevaluaci/.test(raw + k));
@@ -2378,11 +2757,18 @@ function buildParticipantManualSectionBody(p, data){
   if (k.includes('introduccion')) { core = buildMpIntroduccion(data); coreFromTemplate = true; }
   else if (k.includes('objetivos del curso')) { core = buildMpObjetivosDelCurso(data); coreFromTemplate = true; }
   else if (k.includes('objetivo general del seminario')) core = '';
-  else if (k.includes('que aprenderas')) { core = buildMpQueAprenderas(data); coreFromTemplate = true; }
+  // IMPORTANT: "conceptos clave que aprenderas" contiene "que aprenderas" → evaluar conceptos ANTES
+  else if (k.includes('conceptos clave') || (k.includes('conceptos') && k.includes('clave'))) {
+    core = buildMpConceptosClave(data);
+    coreFromTemplate = true;
+  }
+  else if (k.includes('que aprenderas') && !k.includes('conceptos')) {
+    core = buildMpQueAprenderas(data);
+    coreFromTemplate = true;
+  }
   else if (k.includes('metodologia')) { core = buildMpMetodologia(data); coreFromTemplate = true; }
   else if (k.includes('importancia de conocer')) { core = buildMpImportancia(data); coreFromTemplate = true; }
   else if (k.includes('beneficios de conocer')) { core = buildMpBeneficios(data); coreFromTemplate = true; }
-  else if (k.includes('conceptos clave')) { core = buildMpConceptosClave(data); coreFromTemplate = true; }
   else if (k.includes('componentes')) { core = buildMpComponentesDelTema(data); coreFromTemplate = true; }
   else if (k.includes('ejercicio')) { core = buildMpEjercicioPractico(data); coreFromTemplate = true; }
   else if (k.includes('aplicacion') || k.includes('vida laboral')) { core = buildMpAplicacionVidaLaboral(data); coreFromTemplate = true; }
@@ -2396,17 +2782,30 @@ function buildParticipantManualSectionBody(p, data){
   // debe ser el contenido robusto de plantilla y la IA se usa como complemento.
   if (coreFromTemplate) {
     let inner = core;
-    // Evitar duplicar: temario, componentes, qué aprenderás y conceptos clave ya vienen estructurados
+    // Evitar duplicar: secciones ya estructuradas por plantilla (no anexar IA)
     const skipIaSupplement =
       k.includes('componentes') ||
       k.includes('temario') ||
-      k.includes('que aprenderas') ||
-      k.includes('conceptos clave');
-    if (iaLen > 40 && ia !== core && !skipIaSupplement) {
-      inner += `<div class="mp-template-supplement" style="margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0"><p class="mp-h4-sec">Ampliación contextual</p><div class="mp-ia-primary">${ia}</div></div>`;
+      (k.includes('que aprenderas') && !k.includes('conceptos')) ||
+      k.includes('conceptos clave') ||
+      k.includes('conceptos') ||
+      k.includes('objetivos del curso') ||
+      k.includes('ejercicio') ||
+      k.includes('aplicacion') ||
+      k.includes('vida laboral');
+    if (iaLen > 80 && ia !== core && !skipIaSupplement) {
+      // Solo ampliación si aporta prosa distinta (no listas de temas)
+      const iaLooksLikeTopicDump = /tema\s*\d|receso|servicio de caf/i.test(ia) || (ia.match(/<li[\s>]/gi) || []).length > 8;
+      if (!iaLooksLikeTopicDump) {
+        inner += `<div class="mp-template-supplement" style="margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0"><p class="mp-h4-sec">Ampliación contextual</p><div class="mp-ia-primary">${ia}</div></div>`;
+      }
     }
-    const minTemplateChars = k.includes('introduccion') ? 1300 : 900;
-    return enrichParticipantManualBodyIfThin(inner, p, data, { minChars: minTemplateChars, preferSupplement: true });
+    const minTemplateChars = k.includes('introduccion') ? 600 : 400;
+    return enrichParticipantManualBodyIfThin(inner, p, data, {
+      minChars: minTemplateChars,
+      preferSupplement: false,
+      allowModuloExpand: false,
+    });
   }
 
   // Priorizar el manual redactado por IA cuando hay contenido (antes casi solo se veían plantillas si iaLen ≤ 350).
@@ -2430,29 +2829,234 @@ function buildFuenteParticipanteHtml(f, idx){
   const urlMatch = extractValidUrlsFromText(referencia)[0] || '';
   const yearMatch = `${titulo} ${referencia}`.match(/\b(19|20)\d{2}\b/);
   const year = yearMatch ? yearMatch[0] : 'No especificado';
-  const urlFinal = urlMatch || referencia || 'No especificado';
-  const editorial = normalizeCourseNormText(f?.editorial || '')
+  let urlFinal = urlMatch || referencia || 'No especificado';
+  if (/^https?:\/\//i.test(urlFinal) || /^www\./i.test(urlFinal)) {
+    urlFinal = collapseSpacesInUrls(urlFinal).replace(/\s+/g, '');
+  }
+  const editorialRaw = normalizeCourseNormText(f?.editorial || '');
+  const editorialIsPlaceholder = /base de conocimiento|iCurs@|icurso/i.test(editorialRaw);
+  const editorial = (!editorialIsPlaceholder && editorialRaw)
     || (/diputados\.gob\.mx|dof\.gob\.mx|gob\.mx\/documentos\/norma/i.test(urlFinal)
       ? 'Diario Oficial de la Federación (DOF)'
       : autor);
   const pais = normalizeCourseNormText(f?.pais_origen || 'México');
   const fechaAcceso = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
-  const reforma = normalizeCourseNormText(f?.ultima_reforma_consultada || '2024');
+  const reforma = normalizeCourseNormText(f?.ultima_reforma_consultada || 'No aplica');
   const anoPubRaw = f?.ano_publicacion != null && String(f.ano_publicacion).trim() !== '' ? String(f.ano_publicacion).trim() : '';
+  const showReforma = reforma && !/^no aplica$/i.test(reforma);
   const anoLine = anoPubRaw
-    ? `${normalizeCourseNormText(anoPubRaw)} (última reforma consultada ${reforma})`
-    : (year !== 'No especificado' ? `${year} (última reforma consultada ${reforma})` : `No especificado (última reforma consultada ${reforma})`);
+    ? (showReforma ? `${normalizeCourseNormText(anoPubRaw)} (última reforma consultada ${reforma})` : normalizeCourseNormText(anoPubRaw))
+    : (year !== 'No especificado'
+      ? (showReforma ? `${year} (última reforma consultada ${reforma})` : year)
+      : (showReforma ? `No especificado (última reforma consultada ${reforma})` : 'No especificado'));
 
   return `<div class="fuente-item">
 <strong>${idx + 1}. ${titulo}</strong><br>
-o Autor: ${autor}<br>
-o Año de publicación: ${anoLine}<br>
-o Fecha de acceso: ${fechaAcceso}<br>
-o Título de la obra: ${titulo}<br>
-o Editorial: ${editorial}<br>
-o País de origen: ${pais}<br>
-o URL: ${urlFinal}
+• Autor: ${autor}<br>
+• Año de publicación: ${anoLine}<br>
+• Fecha de acceso: ${fechaAcceso}<br>
+• Título de la obra: ${titulo}<br>
+• Editorial: ${editorial}<br>
+• País de origen: ${pais}<br>
+• URL: ${urlFinal}
 </div>`;
+}
+
+function isThinMiList(arr){
+  if (!Array.isArray(arr) || arr.length === 0) return true;
+  const joined = arr.map((x) => String(x || '').trim()).filter(Boolean).join(' ');
+  return joined.length < 48;
+}
+
+function miListHasPattern(arr, re){
+  return Array.isArray(arr) && arr.some((x) => re.test(String(x || '')));
+}
+
+function buildDefaultMiParteFromModule(mod, index, total){
+  const temaTitle = normalizeCourseNormText(mod?.titulo || `Tema ${index + 1}`);
+  const bloques = Array.isArray(mod?.secuencia_didactica)
+    ? mod.secuencia_didactica
+        .map((b) => normalizeCourseNormText(b?.nombre_bloque || b?.titulo || ''))
+        .filter(Boolean)
+        .filter((t) => !isCoffeeOrBreakLabel(t))
+    : [];
+  const temas = bloques.length
+    ? bloques.slice(0, 5)
+    : [
+        `Desarrollar el tema «${temaTitle}».`,
+        `Identificar los conceptos clave asociados a «${temaTitle}».`,
+        `Aplicar lo aprendido en situaciones reales del entorno laboral.`
+      ];
+
+  const sugerencias = [
+    'Revisar el Manual del Participante para ver el desglose de los temas a explicar.',
+    'Comprender los conceptos que se explicarán, apoyándose en ejemplos prácticos incluidos en el manual.',
+    'Usar la presentación de Canva o PowerPoint diseñada para este curso.',
+    'Revisar la bibliografía y fuentes de información del curso para aclarar dudas y reforzar conceptos.'
+  ];
+
+  let tecnicas;
+  if (index === 0) {
+    tecnicas = [
+      'La técnica instruccional será expositiva.',
+      'El instructor explicará los temas de forma clara y entendible, apoyándose con ejemplos reales.'
+    ];
+  } else if (index === total - 1) {
+    tecnicas = [
+      'La técnica instruccional será diálogo-discusión.',
+      'El instructor moderará la conversación manteniendo el orden y respeto entre los participantes.'
+    ];
+  } else {
+    tecnicas = [
+      'La técnica instruccional será expositiva con ejemplos prácticos y diálogo.',
+      'Se fomentará la participación con preguntas para vincular los temas a la experiencia de los participantes.'
+    ];
+  }
+
+  let evaluacion;
+  if (index === 0) {
+    evaluacion = [
+      'La evaluación diagnóstica se realizará mediante un cuestionario escrito al inicio.',
+      'Tiempo para contestarla: 5 minutos máximo.',
+      'Valor: 0% (solo se usará como referencia del conocimiento previo).'
+    ];
+  } else if (index === total - 1) {
+    evaluacion = [
+      'La evaluación sumativa será mediante un cuestionario escrito al cierre del curso.',
+      'Tiempo para contestarla: 10 minutos máximo.',
+      'Valor: 40%.'
+    ];
+  } else {
+    evaluacion = [
+      'La evaluación formativa será mediante la resolución de un caso práctico individual, revisado con una lista de cotejo.',
+      'Tiempo para contestarla: 7 minutos máximo.',
+      'Valor: 60%.'
+    ];
+  }
+
+  const preguntas_refuerzo = [
+    `¿Cuáles son los puntos clave de «${temaTitle}» que el participante debe retener?`,
+    `¿Cómo se aplica «${temaTitle}» en el día a día laboral?`,
+    `¿Qué errores comunes deben evitarse al trabajar este tema?`
+  ];
+
+  return {
+    titulo: `Parte ${index + 1}`,
+    temas,
+    sugerencias,
+    tecnicas,
+    evaluacion,
+    preguntas_refuerzo
+  };
+}
+
+function enrichMiParteWithDefaults(parte, mod, index, total){
+  const base = buildDefaultMiParteFromModule(mod || { titulo: parte?.titulo }, index, total);
+  const mapList = (arr) => (Array.isArray(arr) ? arr : [arr]).map((x) => normalizeCourseNormText(x)).filter(Boolean);
+  let sugerencias = isThinMiList(parte?.sugerencias) ? base.sugerencias : mapList(parte.sugerencias);
+  if (!miListHasPattern(sugerencias, /manual del participante/i)) {
+    sugerencias = ['Revisar el Manual del Participante para ver el desglose de los temas a explicar.', ...sugerencias];
+  }
+  let evaluacion = isThinMiList(parte?.evaluacion) ? base.evaluacion : mapList(parte.evaluacion);
+  if (!miListHasPattern(evaluacion, /valor\s*:/i) || !miListHasPattern(evaluacion, /tiempo/i)) {
+    evaluacion = base.evaluacion;
+  }
+  return {
+    titulo: normalizeCourseNormText(parte?.titulo || base.titulo),
+    temas: isThinMiList(parte?.temas) ? base.temas : mapList(parte.temas),
+    sugerencias,
+    tecnicas: isThinMiList(parte?.tecnicas) ? base.tecnicas : mapList(parte.tecnicas),
+    evaluacion,
+    preguntas_refuerzo: isThinMiList(parte?.preguntas_refuerzo) ? base.preguntas_refuerzo : mapList(parte.preguntas_refuerzo)
+  };
+}
+
+/** Alinea el Manual del Instructor al estilo EC0217.01 (referencia SDI): Partes con temas, sugerencias, técnicas, evaluación con tiempo/valor y preguntas. */
+function ensureManualInstructorQuality(data){
+  if (!data || typeof data !== 'object') return data;
+  const modules = Array.isArray(data.modulos) ? data.modulos.filter((m) => m && !isCoffeeOrBreakLabel(m.titulo || '')) : [];
+  let parts = Array.isArray(data.manual_instructor) ? data.manual_instructor : [];
+  const targetCount = Math.max(parts.length, modules.length, 5);
+  if (!parts.length) {
+    parts = Array.from({ length: targetCount }, (_, i) =>
+      buildDefaultMiParteFromModule(modules[i] || { titulo: `Tema ${i + 1}` }, i, targetCount)
+    );
+  } else {
+    // Completa hasta targetCount si faltan partes
+    while (parts.length < targetCount) {
+      const i = parts.length;
+      parts.push(buildDefaultMiParteFromModule(modules[i] || { titulo: `Tema ${i + 1}` }, i, targetCount));
+    }
+    parts = parts.map((p, i) => enrichMiParteWithDefaults(p, modules[i], i, parts.length));
+  }
+  // Normaliza títulos a "Parte N"
+  parts = parts.map((p, i) => ({
+    ...p,
+    titulo: /^parte\s*\d+/i.test(String(p.titulo || '').trim())
+      ? normalizeCourseNormText(String(p.titulo).replace(/\s+/g, ' ').trim().replace(/^parte/i, 'Parte'))
+      : `Parte ${i + 1}`
+  }));
+  data.manual_instructor = parts;
+  return data;
+}
+
+function formatMiListHtml(arr){
+  const items = Array.isArray(arr) ? arr : [arr];
+  const clean = items
+    .map((item) => ensureReadableSpaces(normalizeCourseNormText(item)))
+    .map((s) => String(s || '').trim())
+    .filter(Boolean);
+  if (!clean.length) return '<ul class="dl"><li>—</li></ul>';
+  return `<ul class="dl"><li>${clean.join('</li><li>')}</li></ul>`;
+}
+
+function buildManualIndexItemHtml(label, anchorId, pageNum){
+  const pg = pageNum != null ? String(pageNum) : '1';
+  const anchorAttr = anchorId ? ` data-toc-anchor="${anchorId}"` : '';
+  return `<div class="mp-index-item"${anchorAttr}><span class="toc-label">${label}</span><span class="toc-leader" aria-hidden="true"></span><span class="toc-pg">${pg}</span></div>`;
+}
+
+/** @deprecated alias — usar buildManualIndexItemHtml */
+function buildMiIndexItemHtml(label, anchorId, pageNum){
+  return buildManualIndexItemHtml(label, anchorId, pageNum);
+}
+
+function buildMiParteHtml(mi, index){
+  const titulo = normalizeCourseNormText(mi.titulo || `Parte ${index + 1}`);
+  return `<div class="mp-section mi-parte manual-sheet-break" id="toc-mi-parte-${index}">
+  <h3>${titulo}</h3>
+  <p class="mi-parte-h">Temas a desarrollar:</p>
+  ${formatMiListHtml(mi.temas)}
+  <p class="mi-parte-h">Sugerencias de apoyo para la explicación de los temas</p>
+  ${formatMiListHtml(mi.sugerencias)}
+  <p class="mi-parte-h">Técnicas para el desarrollo del tema</p>
+  ${formatMiListHtml(mi.tecnicas)}
+  <p class="mi-parte-h">Forma, criterios y tiempos de evaluación</p>
+  ${formatMiListHtml(mi.evaluacion)}
+  <p class="mi-parte-h">Actividades para reforzar el aprendizaje</p>
+  <p class="mi-parte-subh">Preguntas dirigidas:</p>
+  ${formatMiListHtml(mi.preguntas_refuerzo)}
+</div>`;
+}
+
+function buildInstructorIndexHtml(parts){
+  const list = Array.isArray(parts) && parts.length ? parts : [1,2,3,4,5].map((_, i) => ({ titulo: `Parte ${i + 1}` }));
+  let html = '';
+  html += buildMiIndexItemHtml('Introducción', 'toc-mi-intro', 3);
+  html += buildMiIndexItemHtml('Requerimientos para el Curso', 'toc-mi-req', 4);
+  list.forEach((mi, index) => {
+    const label = normalizeCourseNormText(mi.titulo || `Parte ${index + 1}`);
+    html += buildMiIndexItemHtml(label, `toc-mi-parte-${index}`, 5 + index);
+  });
+  html += buildMiIndexItemHtml('Fuentes de información', 'toc-mi-fuentes', 5 + list.length);
+  html += buildMiIndexItemHtml('Anexo 1: Carta Descriptiva', 'toc-mi-anexo-carta-wrap', 6 + list.length);
+  html += buildMiIndexItemHtml('Anexo 2: Instrumentos de Evaluación (Diagnóstica)', 'toc-mi-anexo-diag-wrap', 7 + list.length);
+  html += buildMiIndexItemHtml('Anexo 3: Evaluación Formativa o Guía de Observación', 'toc-mi-anexo-form-wrap', 8 + list.length);
+  html += buildMiIndexItemHtml('Anexo 4: Evaluación Sumativa', 'toc-mi-anexo-sum-wrap', 9 + list.length);
+  html += buildMiIndexItemHtml('Anexo 5: Hoja de Respuestas', 'toc-mi-anexo-resp-wrap', 10 + list.length);
+  html += buildMiIndexItemHtml('Anexo 6: Evaluación de Satisfacción', 'toc-mi-anexo-sat-wrap', 11 + list.length);
+  html += buildMiIndexItemHtml('Anexo 7: Lista de verificación de requerimientos', 'toc-mi-anexo-veri-wrap', 12 + list.length);
+  return html;
 }
 
 function safeDecodeURIComponent(value){
@@ -2463,7 +3067,7 @@ function cleanupUrlCandidate(raw){
   let s = String(raw || '').trim();
   if (!s) return '';
   s = safeDecodeURIComponent(s);
-  s = s.replace(/\s+/g, '');
+  s = collapseSpacesInUrls(s).replace(/\s+/g, '');
   s = s.replace(/[),.;]+$/g, '');
   if (!/^https?:\/\//i.test(s)) return '';
   try {
@@ -2490,17 +3094,72 @@ function getTrustedNom029Resources(){
   ];
 }
 
+function getDefaultContinuityResources(){
+  const normRef = getCurrentCourseNormReference();
+  const curso = String(g('f-curso') || '').toLowerCase();
+  if (normRef === 'NOM-029-STPS-2011' || /nom-029|el[eé]ctric/.test(curso)) {
+    return getTrustedNom029Resources();
+  }
+  if (/nom-035|psicosocial|acoso|violencia/.test(curso) || /NOM-035/i.test(normRef || '')) {
+    return [
+      'https://www.dof.gob.mx/nota_detalle.php?codigo=5542676&fecha=23/10/2018',
+      'https://www.gob.mx/stps/documentos/nom-035-stps-2018-factores-de-riesgo-psicosocial-en-el-trabajo-identificacion-analisis-y-prevencion',
+      'https://www.ilo.org/dyn/normlex/es/f?p=NORMLEXPUB:12100:0::NO::P12100_ILO_CODE:C190',
+      'https://www.diputados.gob.mx/LeyesBiblio/pdf/LFT.pdf'
+    ];
+  }
+  if (/servicio|cliente|cx|atenci[oó]n/.test(curso)) {
+    return [
+      'https://www.zendesk.com/blog/customer-experience-trends/',
+      'https://hyken.com/the-convenience-revolution/',
+      'https://www.briantracy.com/blog/sales-success/the-psychology-of-selling/',
+      'https://www.toistersolutions.com/blog/customer-journey-map'
+    ];
+  }
+  return [
+    'https://www.dof.gob.mx/',
+    'https://www.gob.mx/stps',
+    'https://www.diputados.gob.mx/LeyesBiblio/pdf/LFT.pdf'
+  ];
+}
+
 function getNormalizedContinuityUrls(resources){
   const normRef = getCurrentCourseNormReference();
   const fromAI = Array.isArray(resources)
-    ? resources.flatMap((item) => extractValidUrlsFromText(normalizeCourseNormText(item)))
-    : extractValidUrlsFromText(normalizeCourseNormText(resources));
+    ? resources.flatMap((item) => extractValidUrlsFromText(collapseSpacesInUrls(String(item || ''))))
+    : extractValidUrlsFromText(collapseSpacesInUrls(String(resources || '')));
   const dedup = Array.from(new Set(fromAI));
   if (normRef === 'NOM-029-STPS-2011') {
     const merged = Array.from(new Set([...getTrustedNom029Resources(), ...dedup]));
     return merged.slice(0, 5);
   }
   return dedup.slice(0, 5);
+}
+
+/** Texto + URLs para la fila de continuidad (nunca dejar solo "-"). */
+function buildContinuityHtml(resources){
+  const items = Array.isArray(resources) ? resources : (resources ? [resources] : []);
+  const lines = [];
+  const seen = new Set();
+
+  const pushLine = (raw) => {
+    let t = ensureReadableSpaces(collapseSpacesInUrls(String(raw || ''))).trim();
+    if (!t || t === '-') return;
+    const key = t.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    lines.push(t);
+  };
+
+  items.forEach((item) => pushLine(item));
+  getNormalizedContinuityUrls(resources).forEach((url) => pushLine(url));
+
+  if (lines.length < 3) {
+    getDefaultContinuityResources().forEach((url) => pushLine(url));
+  }
+
+  if (!lines.length) return '-';
+  return lines.map((l) => '- ' + l).join('<br>');
 }
 
 
@@ -2560,44 +3219,17 @@ if (urlParams.has('inst')) { document.getElementById('f-inst').value = urlParams
 
 
 function getDefaultInstructorIndexHtml(){
-  return `
-                <div class="mp-index-item" data-toc-anchor="toc-mi-intro"><span>Introducción</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-req"><span>Requerimientos para el Curso</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-fuentes"><span>Fuentes de información</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-carta-wrap"><span>Anexo 1: Carta Descriptiva</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-diag-wrap"><span>Anexo 2: Instrumentos de Evaluación (Diagnóstica)</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-form-wrap"><span>Anexo 3: Evaluación Formativa o Guía de Observación</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-sum-wrap"><span>Anexo 4: Evaluación Sumativa</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-resp-wrap"><span>Anexo 5: Hoja de Respuestas</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-sat-wrap"><span>Anexo 6: Evaluación de Satisfacción</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-veri-wrap"><span>Anexo 7: Lista de verificación de requerimientos</span><span class="toc-pg">1</span></div>
-
-            `;
+  return buildInstructorIndexHtml([1,2,3,4,5].map((_, i) => ({ titulo: `Parte ${i + 1}` })));
 }
 
 function getDefaultParticipantIndexHtml(){
-  return `
-
-                <div class="mp-index-item" data-toc-anchor="toc-presentacion"><span>Presentación del curso</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item"><span>INTRODUCCIÓN</span><span>5</span></div>
-
-                <div class="mp-index-item"><span>OBJETIVOS DEL CURSO</span><span>7</span></div>
-
-                <div class="mp-index-item"><span>TEMARIO DEL CURSO</span><span>9</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-fuentes"><span>Fuentes de información</span><span class="toc-pg">1</span></div>
-
-            `;
+  return (
+    buildManualIndexItemHtml('Presentación del curso', 'toc-presentacion', 1) +
+    buildManualIndexItemHtml('INTRODUCCIÓN', '', 5) +
+    buildManualIndexItemHtml('OBJETIVOS DEL CURSO', '', 7) +
+    buildManualIndexItemHtml('TEMARIO DEL CURSO', '', 9) +
+    buildManualIndexItemHtml('Fuentes de información', 'toc-fuentes', 1)
+  );
 }
 
 function ensureDefaultManualIndices(){
@@ -2720,7 +3352,36 @@ function unwrapLetterPagesInManualRoot(root){
 
 }
 
-/** Una cara Letter por portada, índice, presentación, cada sección del cuerpo y anexos (no una sola hoja “legal”). */
+/** Empaqueta secciones cortas del Manual del Participante en la misma hoja Letter. */
+function packFlowSectionsIntoLetterPages(container, pageInnerH){
+  if (!container) return;
+  const sections = [...container.children].filter((n) => n.nodeType === 1 && !n.classList.contains('letter-page'));
+  if (!sections.length) return;
+
+  const heights = sections.map((sec) => {
+    const r = sec.getBoundingClientRect();
+    return Math.max(48, r.height || sec.offsetHeight || 120);
+  });
+
+  const maxH = Math.max(520, (pageInnerH || 900) - 28);
+  let lp = null;
+  let used = 0;
+
+  sections.forEach((sec, i) => {
+    const h = heights[i];
+    const wouldOverflow = lp && used > 40 && (used + h + 14) > maxH;
+    if (!lp || wouldOverflow) {
+      lp = document.createElement('div');
+      lp.className = 'letter-page';
+      container.appendChild(lp);
+      used = 0;
+    }
+    lp.appendChild(sec);
+    used += h + 14;
+  });
+}
+
+/** Portada/índice/fuentes: 1 hoja. Cuerpo MP: varias secciones por hoja. MI/anexos: 1 sección por hoja. */
 function paginateDocManual(root){
 
   if (!root || !root.classList.contains('doc-manual')) return;
@@ -2730,6 +3391,8 @@ function paginateDocManual(root){
   const kids = [...root.children].filter((n) => n.nodeType === 1 && !n.classList.contains('letter-page'));
 
   if (kids.length === 0) return;
+
+  const pageH = getManualPageInnerHeightPx(root);
 
   const wrapInLetter = (parentEl, node) => {
 
@@ -2745,7 +3408,10 @@ function paginateDocManual(root){
 
   kids.forEach((ch) => {
 
-    if (ch.id === 'ai-mp-body' || ch.id === 'ai-mi-body' || ch.id === 'mi-seccion-anexos-eval') {
+    if (ch.id === 'ai-mp-body') {
+      // Manual participante: compactar temas en la misma hoja
+      packFlowSectionsIntoLetterPages(ch, pageH);
+    } else if (ch.id === 'ai-mi-body' || ch.id === 'mi-seccion-anexos-eval') {
 
       const inner = [...ch.children].filter((n) => n.nodeType === 1);
 
@@ -2821,8 +3487,13 @@ function actualizarVista(){
   recalculateManualTocPageNumbers();
 
   // Reparar espacios en carta y manuales (pantalla + export Word)
-  ;['doc-carta','doc-part','doc-inst','doc-eval'].forEach((id) => fixAdjacentSpacesInDoc(document.getElementById(id)));
-
+  ;['doc-carta','doc-part','doc-inst','doc-eval'].forEach((id) => {
+    const el = document.getElementById(id);
+    fixAdjacentSpacesInDoc(el);
+    scrubInvalidTableWhitespace(el);
+  });
+  // El café de la carta debe sobrevivir a cualquier refresco de vista
+  ensureCartaCoffeeBreakRow(document.getElementById('ai-modulos'), 3);
 }
 
 
@@ -3160,13 +3831,13 @@ function appendEvaluacionesWordContent(children, root, dx){
 
     parts.forEach((chunk) => {
 
-      const t = chunk.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+      const t = htmlChunkToPlainText(chunk);
 
       if (t.length > 1) {
 
         children.push(new Paragraph({
 
-          children: [new TextRun({ text: t, size: 20, bold: /INSTRUCCIONES|Indicaciones|Objetivo/i.test(t) })],
+          children: [new TextRun({ text: t, size: 20, bold: /INSTRUCCIONES|Indicaciones|Objetivo|Para el (instructor|participante)/i.test(t) })],
 
           spacing: { after: 100 }
 
@@ -3350,11 +4021,11 @@ function appendEvaluacionesWordContent(children, root, dx){
 
         const segs = rawHtml.split(/<br\s*\/?>/i).map(function (chunk) {
 
-          return chunk.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+          return htmlChunkToPlainText(chunk);
 
         }).filter(function (t) { return t.length > 1; });
 
-        const lines = segs.length ? segs : [String(child.textContent || '').replace(/\s+/g, ' ').trim()].filter(function (t) { return t.length > 1; });
+        const lines = segs.length ? segs : [ensureReadableSpaces(String(child.textContent || '')).replace(/\s+/g, ' ').trim()].filter(function (t) { return t.length > 1; });
 
         lines.forEach(function (t) {
 
@@ -3428,54 +4099,232 @@ function appendEvaluacionesWordContent(children, root, dx){
 
 }
 
-/** Word: inserta espacios faltantes entre números/letras/puntuación pegados (ej. 10personas, Duración:2hrs). */
-function ensureReadableSpaces(text) {
-  let s = String(text || '').replace(/\u00a0/g, ' ');
-  // curso«Tema» / »siguiente
-  s = s.replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])([«"“])/g, '$1 $2');
-  s = s.replace(/([»"”])([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])/g, '$1 $2');
-  // Quitar prefijo erróneo "A " / "A. " de listas (¿Qué aprenderás?)
-  s = s.replace(/(^|\n)\s*A[\.\)]\s+/g, '$1');
-  s = s.replace(/(^|\n)\s*A\s+(?=[a-záéíóúüñ])/g, '$1');
-  // Doble viñeta • •
-  s = s.replace(/[•●]\s*[•●]/g, '•');
-  s = s.replace(/(^|\n)\s*[•●]\s*/g, '$1• ');
-  // b)Formativa  a)Diagnóstica
-  s = s.replace(/([a-z])\)([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])/g, '$1) $2');
-  // :2hrs  :listas  :Adultos  :80%
-  s = s.replace(/:([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])/g, ': $1');
-  // 10personas  2hrs  45cuadernillos  11cuad
-  s = s.replace(/(\d+)([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])/g, '$1 $2');
-  // del60%  valor40%  del80
-  s = s.replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])(\d)/g, '$1 $2');
-  // hrs pegado: 2 hrs ya ok; también "min" "personas"
-  s = s.replace(/(\d)\s+(hrs?|minutos?|personas?|formatos?|listas?|bol[ií]grafos?|cuadernillos?|contratos?|cuestionarios?)\b/gi, '$1 $2');
-  // %mínimo (si quedara pegado)
-  s = s.replace(/%([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])/g, '% $1');
-  // Colapsar espacios múltiples (conservar saltos de línea)
+/** Decodifica entidades HTML (&nbsp;, &amp;, &#160;, etc.) a texto real para Word. */
+function decodeHtmlEntities(text) {
+  let s = String(text || '');
+  if (!s) return '';
+  // Doble escape frecuente: &amp;nbsp; → &nbsp;
+  for (let i = 0; i < 3; i++) {
+    if (!/&amp;(?:[a-z]+|#\d+|#x[0-9a-f]+);/i.test(s)) break;
+    s = s.replace(/&amp;([a-z]+|#[0-9]+|#x[0-9a-f]+);/gi, '&$1;');
+  }
+  if (!/&[#a-zA-Z0-9]+;?/.test(s)) {
+    return s.replace(/\u00a0/g, ' ');
+  }
   s = s
-    .split('\n')
-    .map((line) => line.replace(/[ \t\f\v]+/g, ' ').trim())
-    .join('\n');
+    .replace(/&nbsp;?/gi, ' ')
+    .replace(/&#160;/g, ' ')
+    .replace(/&#x0*a0;/gi, ' ')
+    .replace(/&bull;/gi, '•')
+    .replace(/&middot;/gi, '·')
+    .replace(/&mdash;/gi, '—')
+    .replace(/&ndash;/gi, '–')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&amp;/gi, '&');
+  s = s.replace(/&#(\d+);/g, (_, n) => {
+    const code = parseInt(n, 10);
+    return Number.isFinite(code) ? String.fromCharCode(code) : _;
+  });
+  s = s.replace(/&#x([0-9a-f]+);/gi, (_, h) => {
+    const code = parseInt(h, 16);
+    return Number.isFinite(code) ? String.fromCharCode(code) : _;
+  });
+  if (/&[a-z]+;/i.test(s)) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.innerHTML = s;
+      s = ta.value;
+    } catch (_) { /* keep s */ }
+  }
+  return s.replace(/\u00a0/g, ' ');
+}
+
+/** HTML fragmento → texto plano (quita tags y decodifica &nbsp; etc.). */
+function htmlChunkToPlainText(chunk) {
+  return ensureReadableSpaces(String(chunk || '').replace(/<[^>]+>/g, '')).replace(/[ \t\f\v]+/g, ' ').trim();
+}
+
+/** Repara y colapsa espacios dentro de URLs (evita https://www. ilo. org/). */
+function collapseSpacesInUrls(text) {
+  let s = String(text || '');
+  // http(s)://… con espacios erróneos entre segmentos del host/ruta
+  s = s.replace(/https?:\s*\/\s*\/(?:[^\s<>"'()]+|\s+(?=[A-Za-z0-9./?#%&=_+~-]))+/gi, (m) =>
+    m.replace(/\s+/g, '')
+  );
+  // www.dominio… partido por espacios
+  s = s.replace(/\bwww\.\s*(?:[A-Za-z0-9-]+\s*\.\s*)+[A-Za-z]{2,}(?:\s*\/\s*[^\s<>"']*)?/gi, (m) =>
+    m.replace(/\s+/g, '')
+  );
   return s;
+}
+
+/**
+ * Protege URLs mientras se normaliza el texto (no insertar espacios en enlaces).
+ * placeholder tokens se restauran al final.
+ */
+function withProtectedUrls(text, transformFn) {
+  const bag = [];
+  let s = collapseSpacesInUrls(String(text || ''));
+  s = s.replace(/https?:\/\/[^\s<>"']+/gi, (m) => {
+    const idx = bag.length;
+    bag.push(m.replace(/\s+/g, ''));
+    return `\uE000${idx}\uE001`;
+  });
+  s = s.replace(/\bwww\.[^\s<>"']+/gi, (m) => {
+    const idx = bag.length;
+    bag.push(m.replace(/\s+/g, ''));
+    return `\uE000${idx}\uE001`;
+  });
+  s = transformFn(s);
+  // Restaurar (por si alguna regla metió espacios dentro del token)
+  s = s.replace(/\uE000\s*(\d+)\s*\uE001/g, (_, i) => bag[Number(i)] || '');
+  return collapseSpacesInUrls(s);
+}
+
+/** Word: inserta espacios faltantes entre números/letras/puntuación pegados (ej. 10personas, Duración:2horas). */
+function ensureReadableSpaces(text) {
+  return withProtectedUrls(decodeHtmlEntities(String(text || '')).replace(/\u00a0/g, ' '), (raw) => {
+    let s = raw;
+    // curso«Tema» / »siguiente
+    s = s.replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])([«"“])/g, '$1 $2');
+    s = s.replace(/([»"”])([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])/g, '$1 $2');
+    // Quitar prefijo erróneo "A " / "A. " de listas (¿Qué aprenderás?)
+    s = s.replace(/(^|\n)\s*A[\.\)]\s+/gi, '$1');
+    s = s.replace(/(^|\n)\s*A\s+/gi, '$1');
+    // Prefijo basura de fuentes: "&nbsp;o " / "o Autor"
+    s = s.replace(/(^|\n)\s*o\s+(Autor|Año|Fecha|Título|Editorial|País|URL)\s*:/gi, '$1• $2:');
+    // Doble viñeta • •
+    s = s.replace(/[•●]\s*[•●]/g, '•');
+    s = s.replace(/(^|\n)\s*[•●*]\s*/g, '$1• ');
+    // b)Formativa  a)Diagnóstica
+    s = s.replace(/([a-z])\)([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])/g, '$1) $2');
+    // :2horas  :listas  :Adultos  :80%  (no tocar :// de URLs: ya están protegidas)
+    s = s.replace(/:([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])/g, ': $1');
+    // Español: ¿Qué / ¡Hola / qué? / hola! — SIN espacio entre signo y letra
+    s = s.replace(/([¿¡])\s+/g, '$1');
+    s = s.replace(/\s+([?!])/g, '$1');
+    // Tras cierre ? ! sí puede haber espacio antes de la siguiente frase
+    s = s.replace(/([?!])([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])/g, '$1 $2');
+    // Punto solo si sigue MAYÚSCULA (frase), nunca dominio www.ilo
+    s = s.replace(/\.([A-ZÁÉÍÓÚÜÑ])/g, '. $1');
+    // curso«Tema» / »siguiente / Clientees
+    s = s.replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])([«"“])/g, '$1 $2');
+    s = s.replace(/([»"”])([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])/g, '$1 $2');
+    s = s.replace(/curso\s*[«"“]/gi, 'curso «');
+    // 10personas  2horas  45cuadernillos  11cuad
+    s = s.replace(/(\d+)([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])/g, '$1 $2');
+    // del60%  valor40%  del80
+    s = s.replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])(\d)/g, '$1 $2');
+    // horas pegado: 2 horas ya ok; también "min" "personas"
+    s = s.replace(/(\d)\s+(horas?|hrs?|minutos?|personas?|formatos?|listas?|bol[ií]grafos?|cuadernillos?|contratos?|cuestionarios?)\b/gi, '$1 $2');
+    // %mínimo (si quedara pegado)
+    s = s.replace(/%([A-Za-zÁÉÍÓÚÜáéíóúüñÑ])/g, '% $1');
+    // Colapsar espacios múltiples (conservar saltos de línea)
+    s = s
+      .split('\n')
+      .map((line) => line.replace(/[ \t\f\v]+/g, ' ').trim())
+      .join('\n');
+    return s;
+  });
 }
 
 /** Limpia viñetas dobles, prefijo "A " y espacios alrededor de comillas angulares en HTML/texto del manual. */
 function sanitizeManualPlainChunk(text) {
-  let s = String(text || '');
+  let s = collapseSpacesInUrls(decodeHtmlEntities(String(text || '')));
   s = s.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
   s = s.replace(/([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])([«"“])/g, '$1 $2');
   s = s.replace(/([»"”])([A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9])/g, '$1 $2');
-  s = s.replace(/^\s*A[\.\)]\s+/i, '');
-  s = s.replace(/^\s*A\s+(?=[a-záéíóúüñ])/i, '');
+  // Prefijos de lista: "A ", "A.", "A)", "B)", "• •", etc.
+  s = s.replace(/^\s*[A-Z][\.\)]\s+/i, '');
+  s = s.replace(/^\s*A\s+/i, '');
   s = s.replace(/^[•●\-\u2013\u2014]+\s*/g, '');
   s = s.replace(/[•●]\s*[•●]/g, '•');
   s = s.replace(/\s{2,}/g, ' ').trim();
-  return s;
+  return collapseSpacesInUrls(s);
+}
+
+function buildCartaCoffeeBreakRowHtml(minutes) {
+  const m = Math.max(1, Number(minutes) || 3);
+  // Formato carta (como tu ejemplo): Actividades + Duración
+  return `<tr class="carta-receso-cafe" data-carta-receso="1" style="background:#FFF3CD">
+    <td style="background:#FFF3CD"></td>
+    <td style="background:#FFF3CD"><strong>Servicio de Café</strong></td>
+    <td style="background:#FFF3CD"><strong>${m} minutos</strong></td>
+    <td style="background:#FFF3CD"></td>
+    <td style="background:#FFF3CD"></td>
+  </tr>`;
+}
+
+/** Inserta la fila de café justo después de la primera fila de desarrollo (siempre 1 vez). */
+function injectCoffeeAfterFirstRowInHtml(htmlMods, minutes) {
+  let h = String(htmlMods || '');
+  // Quitar cualquier café previo para no duplicar
+  h = h.replace(/<tr\b[^>]*data-carta-receso="1"[^>]*>[\s\S]*?<\/tr>/gi, '');
+  h = h.replace(/<tr\b[^>]*>[\s\S]*?Servicio de Caf[ée][\s\S]*?<\/tr>/gi, '');
+  const coffee = buildCartaCoffeeBreakRowHtml(minutes);
+  const closeIdx = h.search(/<\/tr>/i);
+  if (closeIdx === -1) return coffee + h;
+  return h.slice(0, closeIdx + 5) + coffee + h.slice(closeIdx + 5);
+}
+
+/** Garantiza la fila de café en #ai-modulos (DOM). */
+function ensureCartaCoffeeBreakRow(tbody, minutes) {
+  const target = tbody || document.getElementById('ai-modulos');
+  if (!target) return false;
+  // Si ya hay una fila marcada, ok
+  if (target.querySelector('[data-carta-receso="1"]')) return true;
+  const coffee = buildCartaCoffeeBreakRowHtml(minutes);
+  const rows = Array.from(target.querySelectorAll(':scope > tr'));
+  if (rows.length >= 1) {
+    rows[0].insertAdjacentHTML('afterend', coffee);
+  } else {
+    target.insertAdjacentHTML('beforeend', coffee);
+  }
+  return !!target.querySelector('[data-carta-receso="1"]');
+}
+
+/** Quita filas de café del temario del Manual del Participante (sí van en carta). */
+function stripCoffeeRowsFromTemarioHtml(html) {
+  return String(html || '')
+    .replace(/<tr\b[^>]*data-carta-receso="1"[^>]*>[\s\S]*?<\/tr>/gi, '')
+    .replace(/<tr\b[^>]*>[\s\S]*?(?:SERVICIO DE CAF[ÉE]|Servicio de Caf[ée]|Receso\s*[-–—]\s*SERVICIO)[\s\S]*?<\/tr>/gi, '');
 }
 
 function isCoffeeOrBreakLabel(txt) {
-  return /\breceso\b|\bservicio\s+de\s+caf[eé]\b|\bcaf[eé]\b|\bpausa\s+programada\b/i.test(String(txt || ''));
+  const s = String(txt || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // café → cafe, CAFÉ → cafe
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!s) return false;
+  return (
+    /\breceso\b/.test(s) ||
+    /\bpausa\s*(programada|activa|breve)?\b/.test(s) ||
+    /\bservicio\s+de\s+cafe\b/.test(s) ||
+    /\bcafe(teria)?\b/.test(s) ||
+    /\bcoffee\s*(break)?\b/.test(s)
+  );
+}
+
+/** Quita recesos/café de módulos para temario y componentes del manual (no son temas de aprendizaje). */
+function stripCoffeeBlocksFromFormatData(data) {
+  if (!data || typeof data !== 'object') return data;
+  if (!Array.isArray(data.modulos)) return data;
+  data.modulos = data.modulos
+    .filter((m) => !isCoffeeOrBreakLabel(m && m.titulo))
+    .map((m) => {
+      const seq = Array.isArray(m.secuencia_didactica) ? m.secuencia_didactica : null;
+      if (!seq) return m;
+      return {
+        ...m,
+        secuencia_didactica: seq.filter((b) => !isCoffeeOrBreakLabel(b && b.nombre_bloque)),
+      };
+    });
+  return data;
 }
 
 /**
@@ -3493,6 +4342,17 @@ function extractDomTextWithSpaces(root) {
     if (/\s/.test(a) || /\s/.test(b)) return false;
     if (a === '\n' || b === '\n') return false;
     if (/[([{¿¡/]/.test(a) || /[)\]}.,;:!?%]/.test(b)) return false;
+    // Dominios/emails: www.ilo / ilo.org / .co.uk — NUNCA insertar espacio tras punto de host
+    if (a === '.' && /[A-Za-z0-9-]/.test(b)) return false;
+    // URL scheme leftovers: /path o ://
+    if ((a === '/' || a === ':') && /[A-Za-z0-9/]/.test(b)) return false;
+    // ¿Qué ¡Hola — nunca espacio tras apertura española
+    if (/[¿¡]/.test(a) && /[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]/.test(b)) return false;
+    // qué? hola! — nunca espacio antes de cierre
+    if (/[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]/.test(a) && /[?!]/.test(b)) return false;
+    // !Te  »siguiente  «pegado (solo cierre ?! hacia siguiente frase)
+    if (/[.:;!?»"”]/.test(a) && /[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9«"“]/.test(b)) return true;
+    if (/[A-Za-zÁÉÍÓÚÜáéíóúüñÑ0-9]/.test(a) && /[«"“]/.test(b)) return true;
     // digit|letter, letter|digit, punct|alnum, )|letter
     if (/\d/.test(a) && /[A-Za-zÁÉÍÓÚÜáéíóúüñÑ]/.test(b)) return true;
     if (/[A-Za-zÁÉÍÓÚÜáéíóúüñÑ]/.test(a) && /\d/.test(b)) return true;
@@ -3542,6 +4402,12 @@ function extractDomTextWithSpaces(root) {
 /** Word: en clones fuera del documento, textContent puede pegar palabras entre spans. */
 function tableCellToMultilinePlainText(cell) {
   if (!cell) return '';
+  // Si la celda solo envuelve una tabla anidada, no aplanar su texto aquí
+  // (el exportador Word inserta la subtabla).
+  const onlyNested = cell.querySelector(':scope > table');
+  if (onlyNested && !cell.querySelector(':scope > :not(table):not(colgroup)')) {
+    return '';
+  }
   const directDl = cell.querySelector(':scope > ul.dl, :scope > ul.dl-in-table');
   if (directDl) {
     const items = directDl.querySelectorAll(':scope > li');
@@ -3552,11 +4418,117 @@ function tableCellToMultilinePlainText(cell) {
         .join('\n');
     }
   }
-  return extractDomTextWithSpaces(cell).trim();
+  // Excluir texto de tablas anidadas para no duplicar
+  const clone = cell.cloneNode(true);
+  clone.querySelectorAll('table').forEach((t) => t.remove());
+  return extractDomTextWithSpaces(clone).trim();
 }
 
-/** Portada a página completa + índice en la página siguiente (manuales → Word). */
-function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
+function parseHtmlWidthPercent(el) {
+  if (!el) return null;
+  const style = String(el.getAttribute('style') || '');
+  const m = style.match(/width\s*:\s*([\d.]+)\s*%/i);
+  if (m) return Math.max(1, Math.min(100, parseFloat(m[1])));
+  const w = el.style && el.style.width;
+  if (w && /%$/.test(w)) return Math.max(1, Math.min(100, parseFloat(w)));
+  return null;
+}
+
+function getHtmlTableColumnCount(tableEl) {
+  let max = 0;
+  Array.from(tableEl.rows || []).forEach((tr) => {
+    let count = 0;
+    Array.from(tr.cells || []).forEach((td) => {
+      const cs = parseInt(td.getAttribute('colspan') || '1', 10);
+      count += Number.isFinite(cs) && cs > 0 ? cs : 1;
+    });
+    if (count > max) max = count;
+  });
+  return Math.max(1, max);
+}
+
+/** Convierte una tabla HTML a Table de docx. Usa solo filas/celdas propias (no anidadas). */
+function htmlTableToDocxTable(tableEl, pack) {
+  const { Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle } = pack;
+  if (!tableEl || (tableEl.tagName || '').toLowerCase() !== 'table') return null;
+
+  const borders = {
+    top: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
+    bottom: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
+    left: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
+    right: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
+    insideHorizontal: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
+    insideVertical: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
+  };
+
+  const colCount = getHtmlTableColumnCount(tableEl);
+  const rows = [];
+
+  Array.from(tableEl.rows || []).forEach((tr) => {
+    const cells = [];
+    Array.from(tr.cells || []).forEach((td) => {
+      const nested = td.querySelector(':scope > table');
+      const cellChildren = [];
+
+      if (nested) {
+        const nestedDocx = htmlTableToDocxTable(nested, pack);
+        if (nestedDocx) cellChildren.push(nestedDocx);
+      }
+
+      const text = tableCellToMultilinePlainText(td);
+      text.split('\n').forEach((l) => {
+        const trimL = ensureReadableSpaces(l).trim();
+        if (!trimL) return;
+        const isSh = td.classList.contains('sh') || td.classList.contains('subh') || td.tagName.toLowerCase() === 'th';
+        cellChildren.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: trimL,
+                size: 18,
+                bold: isSh || td.tagName.toLowerCase() === 'th',
+              }),
+            ],
+            spacing: { after: 40 },
+          })
+        );
+      });
+
+      if (cellChildren.length === 0) cellChildren.push(new Paragraph({ text: '' }));
+
+      const colSpan = td.hasAttribute('colspan') ? parseInt(td.getAttribute('colspan'), 10) : 1;
+      const rowSpan = td.hasAttribute('rowspan') ? parseInt(td.getAttribute('rowspan'), 10) : 1;
+      const isSh = td.classList.contains('sh') || td.classList.contains('subh') || td.tagName.toLowerCase() === 'th';
+      const pct = parseHtmlWidthPercent(td);
+      const cellOpts = {
+        children: cellChildren,
+        columnSpan: colSpan > 1 ? colSpan : undefined,
+        rowSpan: rowSpan > 1 ? rowSpan : undefined,
+        shading: isSh ? { fill: 'D9D9D9' } : undefined,
+        margins: { top: 60, bottom: 60, left: 60, right: 60 },
+      };
+      if (pct != null && WidthType) {
+        // Ancho DXA aproximado sobre ~9360 (ancho útil Letter con márgenes)
+        cellOpts.width = { size: Math.round((pct / 100) * 9360), type: WidthType.DXA };
+      } else if (colSpan <= 1 && WidthType) {
+        cellOpts.width = { size: Math.round(9360 / colCount), type: WidthType.DXA };
+      }
+      cells.push(new TableCell(cellOpts));
+    });
+    if (cells.length > 0) rows.push(new TableRow({ children: cells }));
+  });
+
+  if (!rows.length) return null;
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    columnWidths: Array.from({ length: colCount }, () => Math.round(9360 / colCount)),
+    rows,
+    borders,
+  });
+}
+
+/** Portada Word a página completa (sección propia). */
+function appendManualWordCoverPage(coverChildren, sourceEl, dx, cursoCapturado) {
   const {
     Paragraph,
     TextRun,
@@ -3566,21 +4538,17 @@ function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
     WidthType,
     BorderStyle,
     AlignmentType,
-    TabStopType,
-    LeaderType,
-    TabStopPosition,
     VerticalAlign,
     HeightRule,
   } = dx;
   const isPart = sourceEl.id === 'doc-part';
   const cover = sourceEl.querySelector(isPart ? '.mp-cover' : '.mi-cover');
-  const indexBox = sourceEl.querySelector(isPart ? '#ai-mp-index' : '#ai-mi-index');
   const BLUE = '1E3C72';
   const coverCellBorders = {
-    top: { style: BorderStyle.SINGLE, size: 24, color: BLUE },
-    bottom: { style: BorderStyle.SINGLE, size: 24, color: BLUE },
-    left: { style: BorderStyle.SINGLE, size: 24, color: BLUE },
-    right: { style: BorderStyle.SINGLE, size: 24, color: BLUE },
+    top: { style: BorderStyle.SINGLE, size: 28, color: BLUE },
+    bottom: { style: BorderStyle.SINGLE, size: 28, color: BLUE },
+    left: { style: BorderStyle.SINGLE, size: 28, color: BLUE },
+    right: { style: BorderStyle.SINGLE, size: 28, color: BLUE },
   };
 
   const cleanPerson = (v) => {
@@ -3600,19 +4568,25 @@ function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
   const designerName = cleanPerson(g('f-dis') || cover?.querySelector('.mp-author .s-dis')?.textContent);
 
   const cellParas = [];
-  const pushEmpty = (after = 200) => {
-    cellParas.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after }, children: [] }));
+  const spacer = (twips) => {
+    cellParas.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 0, after: twips },
+        children: [new TextRun({ text: ' ', size: 2, color: 'FFFFFF' })],
+      })
+    );
   };
 
-  // Espacio superior para que el título no quede pegado al borde
-  pushEmpty(600);
-  pushEmpty(400);
+  // Distribución vertical: título arriba, nombres abajo (portada completa)
+  spacer(900);
+  spacer(700);
 
   if (kicker) {
     cellParas.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { after: 80 },
+        spacing: { after: 120 },
         children: [new TextRun({ text: kicker.toUpperCase(), size: 28, font: 'Arial', color: '000000' })],
       })
     );
@@ -3621,7 +4595,7 @@ function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
     cellParas.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { after: 360 },
+        spacing: { after: 400 },
         children: [
           new TextRun({ text: titlePart.toUpperCase(), bold: true, size: 56, font: 'Arial', color: '000000' }),
         ],
@@ -3646,66 +4620,78 @@ function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
     );
   }
 
-  // Espacio central: empuja nombres hacia la zona inferior de la portada
-  for (let i = 0; i < 8; i++) pushEmpty(280);
+  for (let i = 0; i < 14; i++) spacer(220);
 
   const pushPersonBlock = (name, role, isLast) => {
     if (name) {
       cellParas.push(
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          spacing: { after: 60 },
-          children: [new TextRun({ text: name, size: 22, font: 'Arial', color: '000000' })],
+          spacing: { after: 80 },
+          children: [new TextRun({ text: name, size: 24, font: 'Arial', color: '000000' })],
         })
       );
     }
     cellParas.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { after: isLast ? 200 : 280 },
+        spacing: { after: isLast ? 200 : 320 },
         children: [new TextRun({ text: role, size: 20, font: 'Arial', color: '000000' })],
       })
     );
   };
 
-  // Ambos manuales: instructor + diseñador (sin códigos EC ni "Coordinador")
   pushPersonBlock(instructorName, 'Instructor del curso', false);
   pushPersonBlock(designerName, 'Diseñador del curso', true);
-  pushEmpty(400);
+  spacer(600);
 
-  if (cellParas.length === 0) {
-    cellParas.push(new Paragraph({ text: '' }));
-  }
+  if (cellParas.length === 0) cellParas.push(new Paragraph({ text: '' }));
 
-  // Alto ≈ área útil Letter (márgenes 1") para marco de portada completa
-  const COVER_ROW_H = 12200;
-  const coverColW =
-    TabStopPosition != null && typeof TabStopPosition.MAX === 'number' ? TabStopPosition.MAX : 9026;
+  // Alto casi página completa Letter (márgenes ~0.4" → área útil ~14688 twips)
+  const COVER_ROW_H = 14000;
+  // Ancho útil con márgenes de portada (12240 - 2*576)
+  const coverColW = 11088;
 
-  const rowOpts = {
-    children: [
-      new TableCell({
-        children: cellParas,
-        borders: coverCellBorders,
-        width: { size: coverColW, type: WidthType.DXA },
-        margins: { top: 360, bottom: 360, left: 360, right: 360 },
-        ...(VerticalAlign ? { verticalAlign: VerticalAlign.CENTER } : {}),
-      }),
-    ],
+  const heightRule = HeightRule && HeightRule.EXACT != null ? HeightRule.EXACT : 'exact';
+  const cellOpts = {
+    children: cellParas,
+    borders: coverCellBorders,
+    width: { size: coverColW, type: WidthType.DXA },
+    margins: { top: 200, bottom: 200, left: 280, right: 280 },
   };
-  if (HeightRule) {
-    rowOpts.height = { value: COVER_ROW_H, rule: HeightRule.EXACT };
+  if (VerticalAlign && VerticalAlign.CENTER != null) {
+    cellOpts.verticalAlign = VerticalAlign.CENTER;
   }
 
-  children.push(
+  coverChildren.push(
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       columnWidths: [coverColW],
-      rows: [new TableRow(rowOpts)],
+      rows: [
+        new TableRow({
+          height: { value: COVER_ROW_H, rule: heightRule },
+          children: [new TableCell(cellOpts)],
+        }),
+      ],
     })
   );
+}
 
-  // Índice en página siguiente
+/** Índice del manual (empieza en la 2.ª página / 2.ª sección). */
+function appendManualWordIndex(children, sourceEl, dx) {
+  const {
+    Paragraph,
+    TextRun,
+    BorderStyle,
+    AlignmentType,
+    TabStopType,
+    LeaderType,
+    TabStopPosition,
+  } = dx;
+  const isPart = sourceEl.id === 'doc-part';
+  const indexBox = sourceEl.querySelector(isPart ? '#ai-mp-index' : '#ai-mi-index');
+  const BLUE = '1E3C72';
+
   children.push(
     new Paragraph({
       children: [
@@ -3718,7 +4704,6 @@ function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
         }),
       ],
       alignment: AlignmentType.LEFT,
-      pageBreakBefore: true,
       spacing: { before: 0, after: 120 },
       border: {
         bottom: { style: BorderStyle.SINGLE, size: 24, color: BLUE, space: 2 },
@@ -3737,17 +4722,20 @@ function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
 
   if (indexBox) {
     indexBox.querySelectorAll('.mp-index-item').forEach((row) => {
-      const spans = row.querySelectorAll('span');
-      if (spans.length < 2) return;
-      let label = String(spans[0].textContent || '').replace(/\s+/g, ' ').trim();
-      const page = String(spans[1].textContent || '').replace(/\s+/g, ' ').trim();
+      const labelEl =
+        row.querySelector('.toc-label') ||
+        row.querySelector('span:not(.toc-dots):not(.toc-leader):not(.toc-pg)') ||
+        row.querySelector('span');
+      const pageEl = row.querySelector('.toc-pg') || row.querySelectorAll('span')[row.querySelectorAll('span').length - 1];
+      const label = String(labelEl?.textContent || '').replace(/\s+/g, ' ').trim();
+      const page = String(pageEl?.textContent || '').replace(/\s+/g, ' ').trim();
       if (!label) return;
       const useTabs = tabDefs.length > 0;
       const rowChildren = useTabs
         ? [
             new TextRun({ text: label, size: 22, font: 'Arial', color: '000000' }),
             new TextRun({ text: '\t', size: 22 }),
-            new TextRun({ text: page, size: 22, font: 'Arial', color: '000000' }),
+            new TextRun({ text: page || '', size: 22, font: 'Arial', color: '000000' }),
           ]
         : [new TextRun({ text: `${label}  ${page}`, size: 22, font: 'Arial', color: '000000' })];
       children.push(
@@ -3765,64 +4753,37 @@ function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
   children.push(new Paragraph({ text: '', spacing: { after: 240 } }));
 }
 
-/** Exporta una tabla HTML a docx (misma lógica que el walker de manuales). */
-function appendWordTableElementFromDom(children, node, pack) {
-  const { Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle } = pack;
-  const tag = (node.tagName || '').toLowerCase();
-  if (tag !== 'table') return;
-  const rows = [];
-  const trs = node.querySelectorAll('tr');
-  trs.forEach((tr) => {
-    const cells = [];
-    const tds = tr.querySelectorAll('th, td');
-    tds.forEach((td) => {
-      const cellParas = [];
-      const text = tableCellToMultilinePlainText(td);
-      const lines = text.split('\n');
-      lines.forEach((l) => {
-        const trimL = ensureReadableSpaces(l).trim();
-        if (trimL) {
-          cellParas.push(
-            new Paragraph({
-              children: [new TextRun({ text: trimL, size: 18, bold: td.tagName.toLowerCase() === 'th' })],
-              spacing: { after: 40 },
-            })
-          );
-        }
-      });
-      if (cellParas.length === 0) cellParas.push(new Paragraph({ text: '' }));
-      const colSpan = td.hasAttribute('colspan') ? parseInt(td.getAttribute('colspan'), 10) : 1;
-      const rowSpan = td.hasAttribute('rowspan') ? parseInt(td.getAttribute('rowspan'), 10) : 1;
-      const isSh = td.classList.contains('sh') || td.classList.contains('subh') || td.tagName.toLowerCase() === 'th';
-      cells.push(
-        new TableCell({
-          children: cellParas,
-          columnSpan: colSpan > 1 ? colSpan : undefined,
-          rowSpan: rowSpan > 1 ? rowSpan : undefined,
-          shading: isSh ? { fill: 'e0e0e0' } : undefined,
-          margins: { top: 80, bottom: 80, left: 80, right: 80 },
-        })
-      );
-    });
-    if (cells.length > 0) rows.push(new TableRow({ children: cells }));
-  });
-  if (rows.length > 0) {
+/** @deprecated Usar appendManualWordCoverPage + appendManualWordIndex */
+function appendManualWordCoverAndIndex(children, sourceEl, dx, cursoCapturado) {
+  appendManualWordCoverPage(children, sourceEl, dx, cursoCapturado);
+  const PageBreak = dx.PageBreak || (typeof docx !== 'undefined' ? docx.PageBreak : null);
+  if (PageBreak) {
+    children.push(new dx.Paragraph({ children: [new PageBreak()] }));
+  } else {
     children.push(
-      new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        rows,
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
-          bottom: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
-          left: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
-          right: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
-          insideHorizontal: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
-          insideVertical: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
-        },
+      new dx.Paragraph({
+        children: [new dx.TextRun({ text: '' })],
+        pageBreakBefore: true,
       })
     );
-    children.push(new Paragraph({ text: '', spacing: { after: 200 } }));
   }
+  appendManualWordIndex(children, sourceEl, dx);
+}
+
+/** Exporta una tabla HTML a docx (misma lógica que el walker de manuales). */
+function appendWordTableElementFromDom(children, node, pack) {
+  const tag = (node.tagName || '').toLowerCase();
+  if (tag !== 'table') return;
+  const docxTable = htmlTableToDocxTable(node, pack);
+  if (!docxTable) return;
+  children.push(docxTable);
+  children.push(new pack.Paragraph({ text: '', spacing: { after: 200 } }));
+}
+
+/** Tablas de primer nivel (no anidadas dentro de otra tabla). */
+function getTopLevelHtmlTables(root) {
+  if (!root) return [];
+  return Array.from(root.querySelectorAll('table')).filter((t) => !t.parentElement || !t.parentElement.closest('table'));
 }
 
 /** Anexos del manual instructor: el walker principal omite #mi-seccion-anexos-eval para no duplicar; aquí se vuelcan a Word. */
@@ -3834,6 +4795,23 @@ function appendManualInstructorAnnexesToWord(children, sourceEl, dx) {
   sec.querySelectorAll('.mi-anexo-inj').forEach((inj) => {
     if (!inj || !String(inj.textContent || '').replace(/\s+/g, ' ').trim()) return;
     children.push(new Paragraph({ text: '', pageBreakBefore: true, spacing: { after: 80 } }));
+
+    // Título de sección del anexo (h3 del wrap)
+    const wrapSec = inj.closest('.mp-section');
+    const h3 = wrapSec && wrapSec.querySelector(':scope > h3');
+    if (h3) {
+      const tx = ensureReadableSpaces(h3.textContent || '').trim();
+      if (tx.length > 2) {
+        children.push(
+          new Paragraph({
+            text: tx,
+            heading: pack.HeadingLevel ? pack.HeadingLevel.HEADING_2 : undefined,
+            spacing: { before: 120, after: 160 },
+          })
+        );
+      }
+    }
+
     const abox = inj.querySelector(':scope > .abox');
     if (abox) {
       const wrap = document.createElement('div');
@@ -3845,19 +4823,10 @@ function appendManualInstructorAnnexesToWord(children, sourceEl, dx) {
       return;
     }
     if (inj.id === 'ai-mi-anexo-carta') {
-      inj.querySelectorAll('table').forEach((tbl) => appendWordTableElementFromDom(children, tbl, pack));
-      inj.querySelectorAll('h3').forEach((h) => {
-        const tx = h.textContent.trim();
-        if (tx.length > 2) {
-          children.push(
-            new Paragraph({
-              text: tx,
-              heading: pack.HeadingLevel.HEADING_2,
-              spacing: { before: 200, after: 120 },
-            })
-          );
-        }
-      });
+      // Usar siempre la carta viva (estructura plana) para evitar tablas anidadas rotas
+      const cartaLive = document.getElementById('doc-carta');
+      const tablesRoot = cartaLive || inj;
+      getTopLevelHtmlTables(tablesRoot).forEach((tbl) => appendWordTableElementFromDom(children, tbl, pack));
     }
   });
 }
@@ -3891,24 +4860,29 @@ function buildWordDoc(el,name,opts={}){
   const isManualPart = sourceEl.id === 'doc-part';
   const isManualInst = sourceEl.id === 'doc-inst';
   const isManualWord = isManualPart || isManualInst;
+  const coverChildren = [];
+  const manualDx = {
+    Paragraph,
+    TextRun,
+    Table,
+    TableRow,
+    TableCell,
+    WidthType,
+    BorderStyle,
+    AlignmentType,
+    TabStopType,
+    LeaderType,
+    TabStopPosition,
+    VerticalAlign,
+    HeightRule,
+    PageBreak: typeof docx !== 'undefined' ? docx.PageBreak : null,
+  };
 
   if (sourceEl.id !== 'doc-eval') {
     if (isManualWord) {
-      appendManualWordCoverAndIndex(children, sourceEl, {
-        Paragraph,
-        TextRun,
-        Table,
-        TableRow,
-        TableCell,
-        WidthType,
-        BorderStyle,
-        AlignmentType,
-        TabStopType,
-        LeaderType,
-        TabStopPosition,
-        VerticalAlign,
-        HeightRule,
-      }, cursoCapturado);
+      // Portada = sección 1 (página completa). Índice + cuerpo = sección 2.
+      appendManualWordCoverPage(coverChildren, sourceEl, manualDx, cursoCapturado);
+      appendManualWordIndex(children, sourceEl, manualDx);
     } else {
       children.push(new Paragraph({
         children:[new TextRun({text: tituloPrincipal, bold: true, size: 44, color: '000000'})],
@@ -3973,102 +4947,12 @@ function buildWordDoc(el,name,opts={}){
 
     if(tag==='table'){
 
-      const rows = [];
-
-      const trs = node.querySelectorAll('tr');
-
-      trs.forEach(tr => {
-
-        const cells = [];
-
-        const tds = tr.querySelectorAll('th, td');
-
-        tds.forEach(td => {
-
-          const cellParas = [];
-
-          const text = tableCellToMultilinePlainText(td);
-
-          const lines = text.split('\n');
-
-          lines.forEach(l => {
-
-             const trimL = ensureReadableSpaces(l).trim();
-
-             if(trimL) {
-
-                cellParas.push(new Paragraph({
-
-                  children: [new TextRun({text: trimL, size: 18, bold: td.tagName.toLowerCase() === 'th'})],
-
-                  spacing: {after: 40}
-
-                }));
-
-             }
-
-          });
-
-          if(cellParas.length === 0) cellParas.push(new Paragraph({text:""}));
-
-          
-
-          const colSpan = td.hasAttribute('colspan') ? parseInt(td.getAttribute('colspan')) : 1;
-
-          const rowSpan = td.hasAttribute('rowspan') ? parseInt(td.getAttribute('rowspan')) : 1;
-
-          const isSh = td.classList.contains('sh') || td.classList.contains('subh') || td.tagName.toLowerCase() === 'th';
-
-          
-
-          cells.push(new TableCell({
-
-            children: cellParas,
-
-            columnSpan: colSpan > 1 ? colSpan : undefined,
-
-            rowSpan: rowSpan > 1 ? rowSpan : undefined,
-
-            shading: isSh ? { fill: "e0e0e0" } : undefined,
-
-            margins: { top: 80, bottom: 80, left: 80, right: 80 }
-
-          }));
-
-        });
-
-        if(cells.length > 0) rows.push(new TableRow({children: cells}));
-
+      const docxTable = htmlTableToDocxTable(node, {
+        Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, HeadingLevel
       });
-
-      if(rows.length > 0) {
-
-        children.push(new Table({
-
-          width: { size: 100, type: WidthType.PERCENTAGE },
-
-          rows: rows,
-
-          borders: {
-
-             top: {style: BorderStyle.SINGLE, size: 2, color: "000000"},
-
-             bottom: {style: BorderStyle.SINGLE, size: 2, color: "000000"},
-
-             left: {style: BorderStyle.SINGLE, size: 2, color: "000000"},
-
-             right: {style: BorderStyle.SINGLE, size: 2, color: "000000"},
-
-             insideHorizontal: {style: BorderStyle.SINGLE, size: 2, color: "000000"},
-
-             insideVertical: {style: BorderStyle.SINGLE, size: 2, color: "000000"}
-
-          }
-
-        }));
-
+      if (docxTable) {
+        children.push(docxTable);
         children.push(new Paragraph({text: "", spacing: {after: 200}}));
-
       }
 
       let next = walker.nextNode();
@@ -4085,13 +4969,23 @@ function buildWordDoc(el,name,opts={}){
 
     } else if(tag==='h3'){
 
+      const secBreak = node.closest('.mp-section.manual-sheet-break');
+      const secFlow = node.closest('.mp-section.mp-section-flow');
+      const sec = secBreak || secFlow;
+      const isIndexSec = !!(sec && (sec.querySelector('#ai-mi-index') || sec.querySelector('#ai-mp-index')));
+      // MP cuerpo (mp-section-flow): sin salto de página entre temas → menos hojas
+      const inMpFlow = !!(isManualPart && (secFlow || (sec && sec.closest('#ai-mp-body'))));
+      const isSectionTitle = !!(isManualWord && secBreak && !isIndexSec && !inMpFlow && node === secBreak.querySelector(':scope > h3'));
+
       children.push(new Paragraph({
 
         text:ensureReadableSpaces(extractDomTextWithSpaces(node) || node.textContent.trim()),
 
         heading:HeadingLevel.HEADING_2,
 
-        spacing:{before:300,after:150}
+        spacing:{before: inMpFlow ? 180 : 300, after: inMpFlow ? 100 : 150},
+
+        ...(isSectionTitle ? { pageBreakBefore: true } : {}),
 
       }));
 
@@ -4100,12 +4994,12 @@ function buildWordDoc(el,name,opts={}){
       const txt=ensureReadableSpaces(extractDomTextWithSpaces(node) || node.textContent.trim());
 
       if(txt.length>2){
-
+        const isMiSubhead = node.classList.contains('mi-parte-h') || node.classList.contains('mi-parte-subh');
         children.push(new Paragraph({
 
-          children:[new TextRun({text:txt,size:20})],
+          children:[new TextRun({text:txt,size:20,bold:isMiSubhead})],
 
-          spacing:{after:120}
+          spacing:{before:isMiSubhead?200:0,after:isMiSubhead?80:120}
 
         }));
 
@@ -4113,9 +5007,11 @@ function buildWordDoc(el,name,opts={}){
 
     } else if(tag==='li'){
 
+      const rawLi = ensureReadableSpaces(extractDomTextWithSpaces(node) || node.textContent.trim());
+      const cleanLi = sanitizeManualPlainChunk(rawLi).replace(/^[•●*]\s*/, '').replace(/^A\s+/i, '');
       children.push(new Paragraph({
 
-        children:[new TextRun({text:'• '+ensureReadableSpaces(extractDomTextWithSpaces(node) || node.textContent.trim()),size:20})],
+        children:[new TextRun({text:'* '+cleanLi,size:20})],
 
         spacing:{after:80},
 
@@ -4157,10 +5053,15 @@ function buildWordDoc(el,name,opts={}){
 
       } else if(node.classList.contains('fuente-item')){
 
+        // Decodificar HTML real (evita &nbsp; literal en Word) y usar viñetas limpias
         const chunks = String(node.innerHTML || '').split(/<br\s*\/?>/i).map(function (chunk) {
-
-          return ensureReadableSpaces(chunk.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
-
+          const holder = document.createElement('div');
+          holder.innerHTML = chunk;
+          let line = ensureReadableSpaces(holder.textContent || '').trim();
+          line = line.replace(/^o\s+(Autor|Año|Fecha|Título|Editorial|País|URL)\s*:/i, '• $1:');
+          line = line.replace(/^&\s*nbsp\s*;?\s*/gi, '').replace(/^&nbsp;?\s*/gi, '');
+          line = collapseSpacesInUrls(line);
+          return line;
         }).filter(function (s) { return s.length > 0; });
 
         chunks.forEach(function (line, i) {
@@ -4243,7 +5144,38 @@ function buildWordDoc(el,name,opts={}){
 
   const pageMargin = isManualWord
     ? { top: 720, right: 720, bottom: 720, left: 720 }
-    : { top: 1440, right: 1440, bottom: 1440, left: 1440 };
+    // Carta descriptiva: márgenes del Word oficial EC0217 (Carta Descriptiva final)
+    : { top: 364, right: 627, bottom: 483, left: 720 };
+  const coverMargin = { top: 576, right: 576, bottom: 576, left: 576 };
+  const letterSize = {
+    width: 12240,
+    height: 15840,
+    orientation: PageOrientation.PORTRAIT,
+  };
+
+  const sections = isManualWord && coverChildren.length
+    ? [
+        {
+          properties: {
+            page: { size: letterSize, margin: coverMargin },
+          },
+          children: coverChildren,
+        },
+        {
+          properties: {
+            page: { size: letterSize, margin: pageMargin },
+          },
+          children,
+        },
+      ]
+    : [
+        {
+          properties: {
+            page: { size: letterSize, margin: pageMargin },
+          },
+          children,
+        },
+      ];
 
   const doc=new Document({
 
@@ -4253,22 +5185,7 @@ function buildWordDoc(el,name,opts={}){
 
     description:'Generado con el Sistema de Documentos EC0301/EC0217',
 
-    sections:[{
-
-      properties:{
-        page:{
-          size:{
-            width:12240,
-            height:15840,
-            orientation:PageOrientation.PORTRAIT
-          },
-          margin: pageMargin
-        }
-      },
-
-      children
-
-    }]
+    sections
 
   });
 
@@ -4391,6 +5308,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     actualizarVista();
 
+    (function initScrollTopBtn(){
+      const pp = document.getElementById('preview-area');
+      const btn = document.getElementById('btn-scroll-top');
+      if (!pp || !btn) return;
+
+      const toggle = () => {
+        const y = pp.scrollTop || 0;
+        const show = y > 100;
+        btn.classList.toggle('show', show);
+        btn.setAttribute('aria-hidden', show ? 'false' : 'true');
+      };
+
+      window.__toggleScrollTopBtn = toggle;
+      pp.addEventListener('scroll', toggle, { passive: true });
+      // Por si el scroll ocurre en el documento del iframe
+      document.addEventListener('scroll', toggle, { passive: true, capture: true });
+
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+          pp.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (_) {
+          pp.scrollTop = 0;
+        }
+        // Tras el scroll, ocultar si ya está arriba
+        setTimeout(toggle, 400);
+      });
+
+      // Re-evaluar al cambiar tamaño / al cargar contenido largo de manuales
+      window.addEventListener('resize', toggle, { passive: true });
+      toggle();
+      setTimeout(toggle, 800);
+      setTimeout(toggle, 2000);
+    })();
+
     const cId = urlParams.get('cursoId');
 
     if (!cId) return;
@@ -4407,7 +5360,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const rJson = await res.json();
 
-        const data = rJson.data;
+        const data = rJson.data || {};
+        ensureManualInstructorQuality(data);
+        // No eliminar café aquí: la carta descriptiva lo necesita.
+        // El Manual del Participante lo filtra al armar temario/componentes.
 
 
 
@@ -4590,15 +5546,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const tContinuidad = document.getElementById('ai-continuidad');
 
-        if (tContinuidad && data.recursos_continuidad) {
+        if (tContinuidad) {
 
-            let rcHtml = '';
-            const continuityUrls = getNormalizedContinuityUrls(data.recursos_continuidad);
-            continuityUrls.forEach((url) => {
-              rcHtml += '- ' + url + '<br>';
-            });
-
-            tContinuidad.innerHTML = rcHtml || '-';
+            tContinuidad.innerHTML = buildContinuityHtml(data.recursos_continuidad);
 
         }
 
@@ -4610,71 +5560,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const tMiIndex = document.getElementById('ai-mi-index');
 
+        ensureManualInstructorQuality(data);
+
         if (tMiBody && Array.isArray(data.manual_instructor) && data.manual_instructor.length > 0) {
 
-            let htmlMi = '';
+            tMiBody.innerHTML = data.manual_instructor.map((mi, index) => buildMiParteHtml(mi, index)).join('');
 
-            let miIndexHtml = `
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-intro"><span>Introducción</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-req"><span>Requerimientos para el Curso</span><span class="toc-pg">1</span></div>`;
-
-            data.manual_instructor.forEach((mi, index) => {
-
-               const formatList = (arr) => Array.isArray(arr)
-                 ? '<ul class="dl" style="margin:5px 0 5px 15px"><li>' + arr.map((item) => normalizeCourseNormText(item)).join('</li><li>') + '</li></ul>'
-                 : '<ul class="dl" style="margin:5px 0 5px 15px"><li>' + normalizeCourseNormText(arr || '') + '</li></ul>';
-
-               htmlMi += `<div class="mi-parte manual-sheet-break" id="toc-mi-parte-${index}" style="margin-bottom:20px">
-
-                 <h3 class="mi-parte-title">${normalizeCourseNormText(mi.titulo || `Parte ${index + 1}`)}</h3>
-
-                 <p style="margin-top:10px"><strong>Temas a desarrollar</strong></p>
-                 ${formatList(mi.temas)}
-
-                 <p style="margin-top:10px"><strong>Sugerencias de apoyo para la explicación de los temas</strong></p>
-                 ${formatList(mi.sugerencias)}
-
-                 <p style="margin-top:10px"><strong>Técnicas para el desarrollo del tema</strong></p>
-                 ${formatList(mi.tecnicas)}
-
-                 <p style="margin-top:10px"><strong>Forma, criterios y tiempos de evaluación</strong></p>
-                 ${formatList(mi.evaluacion)}
-
-                 <p style="margin-top:10px"><strong>Actividades para reforzar el aprendizaje</strong></p>
-                 <p style="font-weight:bold;margin:5px 0">Preguntas dirigidas:</p>
-                 ${formatList(mi.preguntas_refuerzo)}
-
-               </div>`;
-
-               miIndexHtml += `<div class="mp-index-item" data-toc-anchor="toc-mi-parte-${index}"><span>${mi.titulo}</span><span class="toc-pg">1</span></div>`;
-
-            });
-
-            miIndexHtml += `
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-fuentes"><span>Fuentes de información</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-carta-wrap"><span>Anexo 1: Carta Descriptiva</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-diag-wrap"><span>Anexo 2: Instrumentos de Evaluación (Diagnóstica)</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-form-wrap"><span>Anexo 3: Evaluación Formativa o Guía de Observación</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-sum-wrap"><span>Anexo 4: Evaluación Sumativa</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-resp-wrap"><span>Anexo 5: Hoja de Respuestas</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-sat-wrap"><span>Anexo 6: Evaluación de Satisfacción</span><span class="toc-pg">1</span></div>
-
-                <div class="mp-index-item" data-toc-anchor="toc-mi-anexo-veri-wrap"><span>Anexo 7: Lista de verificación de requerimientos</span><span class="toc-pg">1</span></div>
-
-            `;
-
-            tMiBody.innerHTML = htmlMi;
-
-            if (tMiIndex) tMiIndex.innerHTML = miIndexHtml;
+            if (tMiIndex) tMiIndex.innerHTML = buildInstructorIndexHtml(data.manual_instructor);
 
         } else if (tMiIndex) {
 
@@ -4688,17 +5580,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const tMiFuentes = document.getElementById('ai-mi-fuentes');
 
-        if (tMiFuentes && data.fuentes_informacion) {
+        if (tMiFuentes) {
 
             let fuentesHtml = '';
+            const fuentesList = Array.isArray(data.fuentes_informacion) ? data.fuentes_informacion : [];
 
-            data.fuentes_informacion.forEach((f, idx) => {
+            fuentesList.forEach((f, idx) => {
 
                 fuentesHtml += buildFuenteParticipanteHtml(f, idx);
 
             });
 
-            tMiFuentes.innerHTML = fuentesHtml;
+            tMiFuentes.innerHTML = fuentesHtml || '<p class="mp-para">No hay fuentes disponibles. Regenera los formatos o agrega referencias en Base de conocimiento.</p>';
 
         }
 
@@ -4934,7 +5827,7 @@ const dialogMinutes = 5;
                const minExp = 17;
                const minDem = 16;
                const minDia = 17;
-               const incluirReceso = false; // No listar café/receso como tema de aprendizaje
+               const incluirReceso = true; // Carta descriptiva: sí incluir fila de Receso / SERVICIO DE CAFÉ
                const incluirEvaluacion = true;
                const recesoMin = 3;
                const evaluacionMin = 7;
@@ -5006,13 +5899,7 @@ ${normalizeCourseNormText(String(pregunta || ''))}`
                </tr>`;
 
                if (incluirReceso) {
-                 htmlMods += `<tr>
-                    <td><strong>SERVICIO DE CAFÉ.</strong></td>
-                    <td>Receso breve para recuperación y continuidad del aprendizaje.</td>
-                    <td>${recesoMin} min</td>
-                    <td>Técnica energizante / pausa activa</td>
-                    <td>Servicio de café</td>
-                 </tr>`;
+                 htmlMods += buildCartaCoffeeBreakRowHtml(recesoMin);
                }
 
                htmlMods += `<tr>
@@ -5086,7 +5973,19 @@ ${normalizeCourseNormText(String(pregunta || ''))}`
                       : Math.max(sec.length, requiredSubtopics.length || 0);
                     const secToRender = Array.from({ length: targetRowsCount }, (_, rowIndex) => {
                       const sourceBlock = sec[rowIndex] || {};
+                      // En carta: conservar Receso/CAFÉ si viene en la secuencia
                       const enforcedSubtopic = requiredSubtopics[rowIndex] || sourceBlock.nombre_bloque || 'Subtema';
+                      if (isCoffeeOrBreakLabel(sourceBlock.nombre_bloque) || isCoffeeOrBreakLabel(enforcedSubtopic)) {
+                        return {
+                          ...sourceBlock,
+                          nombre_bloque: 'Receso - SERVICIO DE CAFÉ',
+                          tecnica_instruccional: 'Pausa / energizante',
+                          duracion_minutos: Number(sourceBlock.duracion_minutos) || coffeeBreakMinutes,
+                          actividades: 'Espacio breve de recuperación para participantes previo al siguiente bloque de desarrollo.',
+                          materiales_apoyo: 'Servicio de café',
+                          __isCoffeeBreak: true,
+                        };
+                      }
                       const isSynthetic = rowIndex >= sec.length;
                       const synthetic = isSynthetic ? buildUniqueActividadBySubtopic(enforcedSubtopic) : {};
                       const forcedTechniqueForTemario = 'Técnica expositiva';
@@ -5096,14 +5995,24 @@ ${normalizeCourseNormText(String(pregunta || ''))}`
                         tecnica_instruccional: forcedTechniqueForTemario,
                         nombre_bloque: enforcedSubtopic,
                       };
-                    });
+                    }).filter(Boolean);
                     let moduleRenderedMin = 0;
+                    let injectedCoffeeInModule = false;
 
                     secToRender.forEach((b, bi) => {
+                       const isCoffee = !!(b && (b.__isCoffeeBreak || isCoffeeOrBreakLabel(b.nombre_bloque)));
                        const forcedDurations = themeIndex ? (nom029DurationByTheme[themeIndex] || []) : [];
-                       const durationMin = Number(forcedDurations[bi]) || Number(b.duracion_minutos) || 5;
+                       const durationMin = isCoffee
+                         ? (Number(b.duracion_minutos) || coffeeBreakMinutes)
+                         : (Number(forcedDurations[bi]) || Number(b.duracion_minutos) || 5);
                        moduleRenderedMin += durationMin;
                        sumDesarrolloMin += durationMin;
+
+                       if (isCoffee) {
+                         injectedCoffeeInModule = true;
+                         htmlMods += buildCartaCoffeeBreakRowHtml(durationMin);
+                         return;
+                       }
 
                        const col1 = getTemaColContent(m.titulo, b.nombre_bloque, bi, idx);
                        const tecnicaActual = String(b.tecnica_instruccional || '');
@@ -5133,15 +6042,11 @@ ${normalizeCourseNormText(String(pregunta || ''))}`
                        </tr>`;
 
                     });
-                    if (themeIndex === 2) {
+                    // Si la IA no trajo receso en este módulo, insertarlo en carta tras el 2.º tema (control de tiempos)
+                    if (!injectedCoffeeInModule && (themeIndex === 2 || idx === 1)) {
                       sumDesarrolloMin += coffeeBreakMinutes;
-                      htmlMods += `<tr>
-                         <td><strong>Receso:</strong> SERVICIO DE CAFÉ</td>
-                         <td>Espacio breve de recuperación para participantes previo al siguiente bloque de desarrollo.</td>
-                         <td>${coffeeBreakMinutes} min</td>
-                         <td>Técnica energizante / pausa activa</td>
-                         <td>Servicio de café</td>
-                      </tr>`;
+                      moduleRenderedMin += coffeeBreakMinutes;
+                      htmlMods += buildCartaCoffeeBreakRowHtml(coffeeBreakMinutes);
                       htTemario += `<tr><td>—</td><td>Receso - SERVICIO DE CAFÉ</td><td>${coffeeBreakMinutes} min</td><td>Pausa programada del desarrollo</td></tr>`;
                     }
 
@@ -5212,7 +6117,7 @@ f) Plantear preguntas para verificar comprensión:
 
                        <td>${formatActividades(m.actividades, m.tecnica_instruccional)}</td>
 
-                       <td>${dm > 0 ? dm + ' min' : (m.duracion_hrs||0) + ' hrs'}</td>
+                       <td>${dm > 0 ? dm + ' min' : (m.duracion_hrs||0) + ' horas'}</td>
 
                        <td>${esc(m.tecnicas)}</td>
 
@@ -5227,7 +6132,17 @@ f) Plantear preguntas para verificar comprensión:
              });
              }
 
-             tModulos.innerHTML = htmlMods;
+             // Café SIEMPRE en DESARROLLO: inyectado en el HTML (no depende de ensure posterior)
+             const minsCafe = typeof coffeeBreakMinutes === 'number' ? coffeeBreakMinutes : 3;
+             const htmlModsConCafe = injectCoffeeAfterFirstRowInHtml(htmlMods, minsCafe);
+             if (!/servicio\s+de\s+caf/i.test(htmlMods)) {
+               sumDesarrolloMin += minsCafe;
+             }
+             tModulos.innerHTML = htmlModsConCafe;
+             // Doble blindaje por si el navegador reestructura el tbody
+             ensureCartaCoffeeBreakRow(tModulos, minsCafe);
+             setTimeout(function(){ ensureCartaCoffeeBreakRow(document.getElementById('ai-modulos'), minsCafe); }, 50);
+             setTimeout(function(){ ensureCartaCoffeeBreakRow(document.getElementById('ai-modulos'), minsCafe); }, 400);
 
              const aiTemarioEncuadre = document.getElementById('ai-temario-encuadre');
 
@@ -5237,9 +6152,14 @@ f) Plantear preguntas para verificar comprensión:
 
              if (totDes) totDes.textContent = `${sumDesarrolloMin} minutos`;
 
-             if(tMpTemario) tMpTemario.innerHTML = `<tr><th>No.</th><th>Tema</th><th>Tiempo</th><th>Evidencia de aprendizaje</th></tr>` + htTemario + `<tr><td colspan="2"><strong>TOTAL DESARROLLO</strong></td><td><strong>${minutosATextoHumano(sumDesarrolloMin)}</strong></td><td>Secuencia didáctica</td></tr>`;
+             // Temario del manual del participante: sin filas de café
+             if(tMpTemario) tMpTemario.innerHTML = `<tr><th>No.</th><th>Tema</th><th>Tiempo</th><th>Evidencia de aprendizaje</th></tr>` + stripCoffeeRowsFromTemarioHtml(htTemario) + `<tr><td colspan="2"><strong>TOTAL DESARROLLO</strong></td><td><strong>${minutosATextoHumano(sumDesarrolloMin)}</strong></td><td>Secuencia didáctica</td></tr>`;
 
         }
+
+        // Garantía final (aunque no haya data.modulos)
+        ensureCartaCoffeeBreakRow(document.getElementById('ai-modulos'), 3);
+        setTimeout(function(){ ensureCartaCoffeeBreakRow(document.getElementById('ai-modulos'), 3); }, 300);
 
 
 
@@ -5287,7 +6207,7 @@ f) Plantear preguntas para verificar comprensión:
 
         const buildReactivos = (arr) => {
 
-            if(!arr) return '';
+            if(!arr) return { html: '', claves: '' };
 
             let rx = '';
 
@@ -5299,6 +6219,8 @@ f) Plantear preguntas para verificar comprensión:
 
                 // Marcar la corecta si es del instructor
 
+                const pregunta = ensureReadableSpaces(String(q.pregunta || ''));
+
                 const isí = q.respuesta_correcta.toLowerCase() === 'a' ? '<u>a) ' + q.opcion_a + '</u>' : 'a) '+q.opcion_a;
 
                 const isB = q.respuesta_correcta.toLowerCase() === 'b' ? '<u>b) ' + q.opcion_b + '</u>' : 'b) '+q.opcion_b;
@@ -5309,7 +6231,7 @@ f) Plantear preguntas para verificar comprensión:
 
                 
 
-                rx += `<div class="reac"><strong>${i}. ${q.pregunta}</strong><div class="opts">${isí} &nbsp; ${isB} &nbsp; ${isC} &nbsp; ${isD}</div></div>`;
+                rx += `<div class="reac"><strong>${i}. ${pregunta}</strong><div class="opts">${isí} &nbsp; ${isB} &nbsp; ${isC} &nbsp; ${isD}</div></div>`;
 
                 claves += `${i}-${q.respuesta_correcta.toLowerCase()} | `;
 
@@ -5325,7 +6247,7 @@ f) Plantear preguntas para verificar comprensión:
 
         if (tDiag && data.evaluacion_diagnostica) {
 
-             const r = buildReactivos(data.evaluacion_diagnostica);
+             const r = buildReactivos(data.evaluacion_diagnostica.slice(0, 5));
 
              tDiag.innerHTML = r.html;
 
@@ -5401,7 +6323,10 @@ f) Plantear preguntas para verificar comprensión:
 
             data.evaluacion_formativa.forEach((mod) => {
 
-                mod.criterios.forEach((crit) => {
+                if (totalCriterios >= 5) return;
+                const criterios = Array.isArray(mod.criterios) ? mod.criterios : [];
+                criterios.forEach((crit) => {
+                    if (totalCriterios >= 5) return;
                     const criterioObservable = makeObservableCriterion(crit, mod.modulo_titulo);
                     if (!criterioObservable) return;
 
@@ -5446,7 +6371,12 @@ f) Plantear preguntas para verificar comprensión:
 
         if (tSum && data.evaluacion_sumativa) {
 
-             const r = buildReactivos(data.evaluacion_sumativa);
+             const sumArr = Array.isArray(data.evaluacion_sumativa) ? data.evaluacion_sumativa.slice(0, 10) : [];
+             // Blindaje UI: si vinieran menos de 10 (payload viejo), avisar en consola; el API ya completa a 10 al recargar
+             if (sumArr.length < 10) {
+               console.warn('[formatos] evaluacion_sumativa tiene', sumArr.length, 'reactivos; se esperaban 10. Recarga formatos o regenera IA.');
+             }
+             const r = buildReactivos(sumArr);
 
              tSum.innerHTML = r.html;
 
@@ -5494,7 +6424,17 @@ f) Plantear preguntas para verificar comprensión:
 
 
 
-          if(miCarta && elCarta) miCarta.innerHTML = elCarta.innerHTML;
+          if (miCarta && elCarta) {
+            // Solo portada + tablas de primer nivel (evita basura de tablas anidadas en Word)
+            miCarta.innerHTML = '';
+            const dc = elCarta.querySelector('.dc');
+            if (dc) miCarta.appendChild(dc.cloneNode(true));
+            Array.from(elCarta.children).forEach((ch) => {
+              if ((ch.tagName || '').toLowerCase() === 'table') {
+                miCarta.appendChild(ch.cloneNode(true));
+              }
+            });
+          }
 
 
 
@@ -5502,17 +6442,17 @@ f) Plantear preguntas para verificar comprensión:
 
           if (data.evaluacion_diagnostica && data.evaluacion_diagnostica.length) {
 
-            const rd = buildReactivos(data.evaluacion_diagnostica);
+            const rd = buildReactivos(data.evaluacion_diagnostica.slice(0, 5));
 
-            respHtml += '<h3 class="sec">Claves — Evaluación diagnóstica</h3><div class="resp"><strong>CLAVES (INSTRUCTOR):</strong><br>' + rd.claves + '<br><br><strong>Calificación:</strong> _____ / ' + data.evaluacion_diagnostica.length + ' - <em>No es necesario cumplir mínimo. Evaluación referencial.</em></div>';
+            respHtml += '<h3 class="sec">Claves — Evaluación diagnóstica</h3><div class="resp"><strong>CLAVES (INSTRUCTOR):</strong><br>' + rd.claves + '<br><br><strong>Calificación:</strong> _____ / ' + Math.min(5, data.evaluacion_diagnostica.length) + ' - <em>No es necesario cumplir mínimo. Evaluación referencial.</em></div>';
 
           }
 
           if (data.evaluacion_sumativa && data.evaluacion_sumativa.length) {
 
-            const rs = buildReactivos(data.evaluacion_sumativa);
+            const rs = buildReactivos(data.evaluacion_sumativa.slice(0, 10));
 
-            respHtml += '<h3 class="sec">Claves — Evaluación sumativa</h3><div class="resp"><strong>CLAVES (INSTRUCTOR):</strong><br>' + rs.claves + '<br><br><strong>Calificación:</strong> _____ / ' + data.evaluacion_sumativa.length + ' puntos. Valor relativo total calculable final.</div>';
+            respHtml += '<h3 class="sec">Claves — Evaluación sumativa</h3><div class="resp"><strong>CLAVES (INSTRUCTOR):</strong><br>' + rs.claves + '<br><br><strong>Calificación:</strong> _____ / ' + Math.min(10, data.evaluacion_sumativa.length) + ' puntos. Valor relativo total calculable final.</div>';
 
           }
 
@@ -5602,27 +6542,27 @@ f) Plantear preguntas para verificar comprensión:
             }) : [];
 
             const sectionPriority = [
-              { key: 'introduccion', label: 'Introducción' },
-              { key: 'objetivos del curso', label: 'Objetivos del Curso' },
-              { key: 'temario del curso', label: 'Temario del Curso' },
-              { key: 'que aprenderas', label: '¿Qué Aprenderás en Este Curso?' },
-              { key: 'metodologia', label: 'Metodología' },
-              { key: 'importancia de conocer', label: 'Importancia de Conocer el Tema' },
-              { key: 'beneficios de conocer', label: 'Beneficios de Conocer el Tema' },
-              { key: 'conceptos clave', label: 'Conceptos Clave que Aprenderás' },
-              { key: 'componentes', label: 'COMPONENTES DEL TEMARIO' },
-              { key: 'ejercicio', label: 'Ejercicio Práctico' },
-              { key: 'aplicacion', label: 'Aplicación en la Vida Laboral' },
-              { key: 'conclusion', label: 'Conclusión' },
+              { key: 'introduccion', label: 'Introducción', match: (k) => k.includes('introduccion') && !k.includes('concepto') },
+              { key: 'objetivos del curso', label: 'Objetivos del Curso', match: (k) => k.includes('objetivos del curso') || (k.includes('objetivos') && !k.includes('particular')) },
+              { key: 'temario del curso', label: 'Temario del Curso', match: (k) => k.includes('temario') && !k.includes('componentes') },
+              { key: 'que aprenderas', label: '¿Qué Aprenderás en Este Curso?', match: (k) => k.includes('que aprenderas') && !k.includes('conceptos') },
+              { key: 'metodologia', label: 'Metodología', match: (k) => k.includes('metodologia') },
+              { key: 'importancia de conocer', label: 'Importancia de Conocer el Tema', match: (k) => k.includes('importancia') },
+              { key: 'beneficios de conocer', label: 'Beneficios de Conocer el Tema', match: (k) => k.includes('beneficios') },
+              { key: 'conceptos clave', label: 'Conceptos Clave que Aprenderás', match: (k) => k.includes('conceptos') },
+              { key: 'componentes', label: 'COMPONENTES DEL TEMARIO', match: (k) => k.includes('componentes') },
+              { key: 'ejercicio', label: 'Ejercicio Práctico', match: (k) => k.includes('ejercicio') },
+              { key: 'aplicacion', label: 'Aplicación en la Vida Laboral', match: (k) => k.includes('aplicacion') || k.includes('vida laboral') },
+              { key: 'conclusion', label: 'Conclusión', match: (k) => k.includes('conclusion') },
             ];
 
             const orderedSections = [];
             const usedIndexes = new Set();
             sectionPriority.forEach((priority) => {
-              const idx = normalizedSections.findIndex((section, i) => !usedIndexes.has(i) && section.normalizedKey.includes(priority.key));
+              const idx = normalizedSections.findIndex((section, i) => !usedIndexes.has(i) && priority.match(section.normalizedKey));
               if (idx >= 0) {
                 usedIndexes.add(idx);
-                orderedSections.push({ ...normalizedSections[idx], displayTitle: priority.label });
+                orderedSections.push({ ...normalizedSections[idx], displayTitle: priority.label, normalizedKey: priority.key });
               } else {
                 // Forzar siempre la sección, incluso si la IA no la devolvió.
                 orderedSections.push({
@@ -5641,21 +6581,20 @@ f) Plantear preguntas para verificar comprensión:
             const orderedSectionsFiltered = orderedSections.filter((s) => !s.normalizedKey.includes('objetivo general del seminario'));
 
             let mpholder = '';
-            let mpIndexHtml = `
-                <div class="mp-index-item" data-toc-anchor="toc-presentacion"><span>Presentación del curso</span><span class="toc-pg">1</span></div>`;
+            let mpIndexHtml = buildManualIndexItemHtml('Presentación del curso', 'toc-presentacion', 1);
 
             orderedSectionsFiltered.forEach((p, index) => {
 
                 const bodyHtml = buildParticipantManualSectionBody(p, data);
 
                 const titleForRender = p.displayTitle || p.rawTitle || '';
-                mpholder += `<div class="mp-section manual-sheet-break" id="toc-mp-sec-${index}"><h3>${titleForRender}</h3><div class="mp-modulo-body">${bodyHtml}</div></div>`;
+                mpholder += `<div class="mp-section mp-section-flow" id="toc-mp-sec-${index}"><h3>${titleForRender}</h3><div class="mp-modulo-body">${bodyHtml}</div></div>`;
 
-                mpIndexHtml += `<div class="mp-index-item" data-toc-anchor="toc-mp-sec-${index}"><span>${titleForRender}</span><span class="toc-pg">1</span></div>`;
+                mpIndexHtml += buildManualIndexItemHtml(titleForRender, `toc-mp-sec-${index}`, 1);
 
             });
 
-            mpIndexHtml += `<div class="mp-index-item" data-toc-anchor="toc-fuentes"><span>Fuentes de información</span><span class="toc-pg">1</span></div>`;
+            mpIndexHtml += buildManualIndexItemHtml('Fuentes de información', 'toc-fuentes', 1);
 
             tMp.innerHTML = mpholder;
 
@@ -5680,17 +6619,18 @@ f) Plantear preguntas para verificar comprensión:
 
         const tFuentes = document.getElementById('ai-mp-fuentes');
 
-        if (tFuentes && data.fuentes_informacion) {
+        if (tFuentes) {
 
             let fuentesHtml = '';
+            const fuentesList = Array.isArray(data.fuentes_informacion) ? data.fuentes_informacion : [];
 
-            data.fuentes_informacion.forEach((f, idx) => {
+            fuentesList.forEach((f, idx) => {
 
                 fuentesHtml += buildFuenteParticipanteHtml(f, idx);
 
             });
 
-            tFuentes.innerHTML = fuentesHtml;
+            tFuentes.innerHTML = fuentesHtml || '<p class="mp-para">No hay fuentes disponibles. Regenera los formatos o agrega referencias en Base de conocimiento.</p>';
 
         }
 
@@ -5704,7 +6644,13 @@ f) Plantear preguntas para verificar comprensión:
 
         // Forzar consistencia de norma en toda la carta descriptiva.
         enforceNormConsistencyInCarta();
+        scrubManualParticipantLists(document.getElementById('doc-part'));
         enforceNormConsistencyInManualParticipante();
+        // Reaplicar campos dinámicos + espacios (tras el walker de norma)
+        actualizarVista();
+        // Último blindaje: café en carta DESARROLLO
+        ensureCartaCoffeeBreakRow(document.getElementById('ai-modulos'), 3);
+        setTimeout(function(){ ensureCartaCoffeeBreakRow(document.getElementById('ai-modulos'), 3); }, 200);
 
 
 

@@ -44,3 +44,7 @@ next-env.d.ts
 # scripts / scratch local
 fix*.py
 lint_errors.txt
+tmp-*/
+tmp-*/**
+
+.vercel

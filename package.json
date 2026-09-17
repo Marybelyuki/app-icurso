@@ -11,7 +11,7 @@
     ]
   },
   "scripts": {
-    "dev": "node scripts/clean-dev-lock.cjs && next dev",
+    "dev": "node scripts/clean-dev-lock.cjs && next dev -p 3003",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"

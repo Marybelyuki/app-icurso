@@ -1033,6 +1033,8 @@ table.mp-t tr:nth-child(even) td{background:#f5f8fc}
         <div class="mi-cover-doc">Manual del Instructor</div>
 
         <div class="mp-author">
+          <div class="mp-cover-person"><span class="s-inst">-</span><br><span class="mp-cover-role">Instructor del curso</span></div>
+          <div class="mp-author-gap"></div>
           <div class="mp-cover-person"><span class="s-dis">-</span><br><span class="mp-cover-role">Diseñador del curso</span></div>
         </div>
 
@@ -3042,20 +3044,21 @@ function buildMiParteHtml(mi, index){
 function buildInstructorIndexHtml(parts){
   const list = Array.isArray(parts) && parts.length ? parts : [1,2,3,4,5].map((_, i) => ({ titulo: `Parte ${i + 1}` }));
   let html = '';
-  html += buildMiIndexItemHtml('Introducción', 'toc-mi-intro', 3);
-  html += buildMiIndexItemHtml('Requerimientos para el Curso', 'toc-mi-req', 4);
+  // Números provisionales: recalculateManualTocPageNumbersSync los sustituye por páginas reales
+  html += buildMiIndexItemHtml('Introducción', 'toc-mi-intro', '…');
+  html += buildMiIndexItemHtml('Requerimientos para el Curso', 'toc-mi-req', '…');
   list.forEach((mi, index) => {
     const label = normalizeCourseNormText(mi.titulo || `Parte ${index + 1}`);
-    html += buildMiIndexItemHtml(label, `toc-mi-parte-${index}`, 5 + index);
+    html += buildMiIndexItemHtml(label, `toc-mi-parte-${index}`, '…');
   });
-  html += buildMiIndexItemHtml('Fuentes de información', 'toc-mi-fuentes', 5 + list.length);
-  html += buildMiIndexItemHtml('Anexo 1: Carta Descriptiva', 'toc-mi-anexo-carta-wrap', 6 + list.length);
-  html += buildMiIndexItemHtml('Anexo 2: Instrumentos de Evaluación (Diagnóstica)', 'toc-mi-anexo-diag-wrap', 7 + list.length);
-  html += buildMiIndexItemHtml('Anexo 3: Evaluación Formativa o Guía de Observación', 'toc-mi-anexo-form-wrap', 8 + list.length);
-  html += buildMiIndexItemHtml('Anexo 4: Evaluación Sumativa', 'toc-mi-anexo-sum-wrap', 9 + list.length);
-  html += buildMiIndexItemHtml('Anexo 5: Hoja de Respuestas', 'toc-mi-anexo-resp-wrap', 10 + list.length);
-  html += buildMiIndexItemHtml('Anexo 6: Evaluación de Satisfacción', 'toc-mi-anexo-sat-wrap', 11 + list.length);
-  html += buildMiIndexItemHtml('Anexo 7: Lista de verificación de requerimientos', 'toc-mi-anexo-veri-wrap', 12 + list.length);
+  html += buildMiIndexItemHtml('Fuentes de información', 'toc-mi-fuentes', '…');
+  html += buildMiIndexItemHtml('Anexo 1: Carta Descriptiva', 'toc-mi-anexo-carta-wrap', '…');
+  html += buildMiIndexItemHtml('Anexo 2: Instrumentos de Evaluación (Diagnóstica)', 'toc-mi-anexo-diag-wrap', '…');
+  html += buildMiIndexItemHtml('Anexo 3: Evaluación Formativa o Guía de Observación', 'toc-mi-anexo-form-wrap', '…');
+  html += buildMiIndexItemHtml('Anexo 4: Evaluación Sumativa', 'toc-mi-anexo-sum-wrap', '…');
+  html += buildMiIndexItemHtml('Anexo 5: Hoja de Respuestas', 'toc-mi-anexo-resp-wrap', '…');
+  html += buildMiIndexItemHtml('Anexo 6: Evaluación de Satisfacción', 'toc-mi-anexo-sat-wrap', '…');
+  html += buildMiIndexItemHtml('Anexo 7: Lista de verificación de requerimientos', 'toc-mi-anexo-veri-wrap', '…');
   return html;
 }
 
@@ -3276,57 +3279,115 @@ function getManualPageInnerHeightPx(docRoot){
 
 }
 
-/** Número de página estimado según posición vertical dentro del manual (altura útil ≈ Letter 11"). */
-function recalculateManualTocPageNumbers(){
+/** Aplica estilos off-screen para medir un nodo que puede estar en display:none. */
+function withOffscreenMeasurable(el, fn){
+  if (!el) return fn();
+  const keys = ['display','visibility','position','left','top','width','height','overflow','pointerEvents','zIndex','maxHeight'];
+  const prev = {};
+  keys.forEach((k) => { prev[k] = el.style[k]; });
+  el.style.display = 'block';
+  el.style.visibility = 'hidden';
+  el.style.position = 'absolute';
+  el.style.left = '-12000px';
+  el.style.top = '0';
+  el.style.width = '7.5in';
+  el.style.height = 'auto';
+  el.style.maxHeight = 'none';
+  el.style.overflow = 'visible';
+  el.style.pointerEvents = 'none';
+  el.style.zIndex = '-1';
+  try {
+    return fn();
+  } finally {
+    keys.forEach((k) => { el.style[k] = prev[k]; });
+  }
+}
 
-  requestAnimationFrame(() => {
+/** Muestra anexos del MI (y carta viva si hace falta) fuera de pantalla para medir altura real. */
+function withMiAnnexesMeasurable(fn){
+  const sec = document.getElementById('mi-seccion-anexos-eval');
+  const carta = document.getElementById('doc-carta');
+  const cartaHost = (carta && carta.closest('.dv')) || carta;
+  const run = () => {
+    if (!sec) return fn();
+    return withOffscreenMeasurable(sec, fn);
+  };
+  // La carta suele estar en pestaña inactiva (.dv sin .active → display:none)
+  if (cartaHost) {
+    return withOffscreenMeasurable(cartaHost, run);
+  }
+  return run();
+}
 
-    document.querySelectorAll('.mp-index-item[data-toc-anchor]').forEach((row) => {
+/** Altura de contenido usable (forzando reflow). */
+function readContentHeight(el){
+  if (!el) return 0;
+  void el.offsetHeight;
+  return Math.max(el.scrollHeight || 0, el.offsetHeight || 0, 0);
+}
 
-      const id = row.getAttribute('data-toc-anchor');
+/** Estima cuántas hojas Letter ocupa un bloque (carta/anexos largos cuentan varias). */
+function estimateSectionPageCount(anchor, pageInnerH){
+  if (!anchor) return 1;
+  let el = anchor;
+  if (anchor.id === 'toc-mi-anexo-carta-wrap') {
+    // Preferir el clon inyectado en el anexo; si está vacío, la carta viva (ya measurable).
+    const inj = anchor.querySelector('.mi-anexo-inj') || document.getElementById('ai-mi-anexo-carta');
+    const carta = document.getElementById('doc-carta');
+    const injH = readContentHeight(inj);
+    const cartaH = readContentHeight(carta);
+    if (injH >= 120 || cartaH >= 120) {
+      // Sumar título del anexo (~40px) al contenido más alto
+      const contentH = Math.max(injH, cartaH);
+      const usable = Math.max(620, Math.min(760, (pageInnerH || 900) * 0.72));
+      return Math.max(1, Math.ceil((contentH + 48) / usable));
+    }
+    el = inj || carta || anchor;
+  } else if (anchor.id && String(anchor.id).indexOf('toc-mi-anexo-') === 0) {
+    const inj = anchor.querySelector('.mi-anexo-inj');
+    if (inj && readContentHeight(inj) > 40) el = inj;
+  } else if (!anchor.classList.contains('mp-section')) {
+    el = anchor.closest('.mp-section') || anchor;
+  }
+  const h = Math.max(readContentHeight(el), 180);
+  // Área útil aprox. Letter en Word (márgenes + tablas que rompen página)
+  const usable = Math.max(620, Math.min(780, (pageInnerH || 900) * 0.78));
+  return Math.max(1, Math.ceil(h / usable));
+}
 
-      const anchor = id ? document.getElementById(id) : null;
-
-      const docRoot = id ? getManualDocRootForTocAnchor(id) : null;
-
-      const pgEl = row.querySelector('.toc-pg') || row.querySelectorAll('span')[1];
-
-      if (!anchor || !docRoot || !pgEl) return;
-
-      const hideSec = anchor.closest('#mi-seccion-anexos-eval');
-
-      if (hideSec && window.getComputedStyle(hideSec).display === 'none') return;
-
-      const lp = anchor.closest('.letter-page');
-
-      if (lp && docRoot.dataset.paginated === '1' && docRoot.contains(lp)) {
-
-        const pages = [...docRoot.querySelectorAll('.letter-page')];
-
-        const idx = pages.indexOf(lp);
-
-        if (idx >= 0) {
-
-          pgEl.textContent = String(idx + 1);
-
-          return;
-
-        }
-
-      }
-
+/**
+ * Recalcula el índice con páginas acumuladas reales:
+ * portada=1, índice=2, luego cada tema/anexo suma las hojas que realmente ocupa.
+ */
+function recalculateManualTocPageNumbersSync(){
+  withMiAnnexesMeasurable(() => {
+    document.querySelectorAll('#ai-mi-index, #ai-mp-index').forEach((indexBox) => {
+      const docRoot = indexBox.closest('.doc-manual');
+      if (!docRoot) return;
       const pageH = getManualPageInnerHeightPx(docRoot);
-
-      const y = anchor.getBoundingClientRect().top - docRoot.getBoundingClientRect().top;
-
-      const pg = 1 + Math.floor(Math.max(0, y) / pageH);
-
-      pgEl.textContent = String(Math.max(1, pg));
-
+      // 1 = portada, 2 = índice; el primer tema del cuerpo empieza en 3
+      let nextPage = 3;
+      const items = [...indexBox.querySelectorAll('.mp-index-item[data-toc-anchor]')];
+      items.forEach((row) => {
+        const id = row.getAttribute('data-toc-anchor');
+        const pgEl = row.querySelector('.toc-pg') || row.querySelectorAll('span')[row.querySelectorAll('span').length - 1];
+        if (!pgEl) return;
+        const anchor = id ? document.getElementById(id) : null;
+        pgEl.textContent = String(nextPage);
+        const pages = estimateSectionPageCount(anchor, pageH);
+        nextPage += pages;
+      });
     });
-
   });
+}
 
+/** Número de página estimado según contenido real (anexos largos incluidos). */
+function recalculateManualTocPageNumbers(){
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      recalculateManualTocPageNumbersSync();
+    });
+  });
 }
 
 /** Desenvuelve todas las .letter-page (raíz y anidadas en cuerpo/anexos) para exportar o reclonar. */
@@ -4679,6 +4740,8 @@ function appendManualWordCoverPage(coverChildren, sourceEl, dx, cursoCapturado) 
 
 /** Índice del manual (empieza en la 2.ª página / 2.ª sección). */
 function appendManualWordIndex(children, sourceEl, dx) {
+  // Preferir el índice vivo (ya recalculado) por si sourceEl es un clon desactualizado
+  try { recalculateManualTocPageNumbersSync(); } catch (_) { /* keep existing */ }
   const {
     Paragraph,
     TextRun,
@@ -4689,7 +4752,8 @@ function appendManualWordIndex(children, sourceEl, dx) {
     TabStopPosition,
   } = dx;
   const isPart = sourceEl.id === 'doc-part';
-  const indexBox = sourceEl.querySelector(isPart ? '#ai-mp-index' : '#ai-mi-index');
+  const liveBox = document.querySelector(isPart ? '#ai-mp-index' : '#ai-mi-index');
+  const indexBox = liveBox || sourceEl.querySelector(isPart ? '#ai-mp-index' : '#ai-mi-index');
   const BLUE = '1E3C72';
 
   children.push(
@@ -4842,6 +4906,10 @@ function buildWordDoc(el,name,opts={}){
   const { silent = false, fileNameOverride = '', evalExportMode = 'all' } = opts;
 
   const children=[];
+  // Antes del clon: números de índice acordes al contenido real (carta multilámina, etc.)
+  if (el && (el.id === 'doc-inst' || el.id === 'doc-part')) {
+    try { recalculateManualTocPageNumbersSync(); } catch (_) { /* ignore */ }
+  }
   const sourceEl = getPreparedExportClone(el, evalExportMode);
 
   const cursoCapturado = String(g('f-curso') || '').trim();
@@ -6650,7 +6718,13 @@ f) Plantear preguntas para verificar comprensión:
         actualizarVista();
         // Último blindaje: café en carta DESARROLLO
         ensureCartaCoffeeBreakRow(document.getElementById('ai-modulos'), 3);
-        setTimeout(function(){ ensureCartaCoffeeBreakRow(document.getElementById('ai-modulos'), 3); }, 200);
+        setTimeout(function(){
+          ensureCartaCoffeeBreakRow(document.getElementById('ai-modulos'), 3);
+          // Tras anexos + carta (altura final), recalcular índice otra vez
+          paginateDocManual(document.getElementById('doc-inst'));
+          recalculateManualTocPageNumbersSync();
+        }, 200);
+        setTimeout(function(){ recalculateManualTocPageNumbersSync(); }, 600);
 
 
 
